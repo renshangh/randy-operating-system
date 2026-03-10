@@ -1,7 +1,16 @@
 # Blocker Escalation Protocol & Response SLA
 
+**Owner:** Aether  
+**Audience:** Randy + Aether  
+**Review Cadence:** Monthly
+
 ## Objective
 Ensure that blockers do not stall the operating system for more than 24 hours.
+
+## Cross-links
+- `DAILY_BRIEF_TEMPLATE.md`
+- `SOP_SERVICE_RESTARTS.md`
+- `SOP_CONFIG_CHANGES.md`
 
 ## Blocker Definitions
 - **Internal Blocker:** Aether needs a decision, credential, or approval from Randy.
