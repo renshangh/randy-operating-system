@@ -1,7 +1,17 @@
 # Daily Briefing Template
 
-## Overview
-Concise daily briefing provided by Aether to Randy at the start of the operating day (08:30 Triage block).
+**Owner:** Aether  
+**Audience:** Randy  
+**Review Cadence:** Monthly
+
+## Objective
+Concise daily briefing provided by Aether to Randy at the start of the operating day during the 08:30 triage block.
+
+## Cross-links
+- `USER_GUIDE.md`
+- `BLOCKER_PROTOCOL.md`
+- `SOP_MODEL_ROUTING.md`
+
 
 ## Structure
 ### 1. Top 3 Priorities (Exec Queue)

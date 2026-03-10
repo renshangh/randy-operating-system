@@ -1,6 +1,15 @@
 # User Guide: Randy Live Control Board
 
+**Owner:** Aether  
+**Audience:** Randy  
+**Review Cadence:** Monthly
+
 This guide explains how to operate and maintain your unified command center (GitHub Project #2).
+
+## Related SOPs
+- `SOP_HEARTBEAT.md`
+- `SOP_CRON_AND_SCHEDULED_JOBS.md`
+- `BLOCKER_PROTOCOL.md`
 
 ## 1. Accessing the Board
 - **Web:** [https://github.com/users/renshangh/projects/2](https://github.com/users/renshangh/projects/2)
