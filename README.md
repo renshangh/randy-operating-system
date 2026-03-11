@@ -1,4 +1,4 @@
-# Randy Personal Dashboard
+# AI Agent Randy Dashboard
 
 Personal operating system for Randy across GitHub, Gmail, Calendar, and OpenClaw.
 
