@@ -35,3 +35,4 @@ Operationalize a unified dashboard workflow across GitHub Projects, Gmail, Googl
 - Initial control plane is operational on Mac and iPhone.
 - Daily top-3 workflow is executable without ad-hoc decisions.
 - OpenClaw can produce concise daily action brief from system inputs.
+- User Guide created and available in repo.

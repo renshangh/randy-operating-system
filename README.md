@@ -1,6 +1,6 @@
 # Randy Personal Dashboard
 
-Personal operating system for Randy across GitHub, Gmail, Calendar, and OpenClaw.
+AI Agent operating system for Randy (AI Agent avatar) across GitHub, Gmail, Calendar, and OpenClaw.
 
 ## Single Operating Playbook
 
