@@ -1,0 +1,16 @@
+{
+  "status": "stubbed",
+  "task_packet": {
+    "repository_full_name": "renshangh/real-estate-assistant",
+    "local_repo_path": "/Users/renshan/.openclaw/workspace/real-estate-assistant",
+    "issue_number": 157,
+    "issue_title": "#154 Working Item: Initialize SQLite database from api/schema.sql",
+    "objective": "Parent issues: #154\n\n## Objective\nInitialize the local SQLite operational database from `api/schema.sql`.",
+    "scope_constraints": "Follow issue scope exactly; keep work narrow.",
+    "acceptance_criteria": "Use the issue checklist and latest comments as acceptance criteria.",
+    "recent_relevant_comments": [],
+    "output_expectation": "Return concise done/blocked/failed result for GitHub reporting.",
+    "run_id": "3820a63a-73bc-4518-98a5-aeb62611f971"
+  },
+  "note": "Real Ember runtime wiring is intentionally conservative in the first cut; adapter boundary now exists."
+}

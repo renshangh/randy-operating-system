@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>ai.openclaw.github-webhook-listener</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/zsh</string>
+      <string>/Users/danielshan/.openclaw/workspace-ember/randy-operating-system/scripts/start_github_webhook_listener.sh</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>GITHUB_WEBHOOK_SECRET</key>
+      <string>reta-webhook-2026</string>
+      <key>ALLOWED_REPOS</key>
+      <string>renshangh/real-estate-assistant</string>
+      <key>LISTENER_HOST</key>
+      <string>127.0.0.1</string>
+      <key>LISTENER_PORT</key>
+      <string>8787</string>
+      <key>REPO_DIR</key>
+      <string>/Users/danielshan/.openclaw/workspace-ember/randy-operating-system</string>
+      <key>LOG_FILE</key>
+      <string>/tmp/ember_webhook_listener.log</string>
+      <key>PATH</key>
+      <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/danielshan/.openclaw/workspace-ember/randy-operating-system</string>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/ember_webhook_listener.launchagent.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/ember_webhook_listener.launchagent.stderr.log</string>
+  </dict>
+</plist>
