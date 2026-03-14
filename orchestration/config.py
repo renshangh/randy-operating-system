@@ -14,7 +14,10 @@ class ListenerConfig:
     @classmethod
     def from_env(cls) -> "ListenerConfig":
         secret = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
-        repos_raw = os.environ.get("ALLOWED_REPOS", "renshangh/real-estate-assistant")
+        repos_raw = os.environ.get(
+            "ALLOWED_REPOS",
+            "renshangh/real-estate-assistant,renshangh/openclaw-remote-deploy",
+        )
         repos = tuple(r.strip() for r in repos_raw.split(",") if r.strip())
         host = os.environ.get("LISTENER_HOST", "127.0.0.1")
         port = int(os.environ.get("LISTENER_PORT", "8787"))

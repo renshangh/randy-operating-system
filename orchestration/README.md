@@ -15,14 +15,17 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 
 ## Environment variables
 - `GITHUB_WEBHOOK_SECRET` — required GitHub webhook HMAC secret
-- `ALLOWED_REPOS` — comma-separated repo allowlist, default: `renshangh/real-estate-assistant`
+- `ALLOWED_REPOS` — comma-separated repo allowlist, default: `renshangh/real-estate-assistant,renshangh/openclaw-remote-deploy`
+- `ORCHESTRATION_RETA_PATH` — optional explicit local path for `renshangh/real-estate-assistant`
+- `ORCHESTRATION_REMOTE_DEPLOY_PATH` — optional explicit local path for `renshangh/openclaw-remote-deploy`
 - `LISTENER_HOST` — default `127.0.0.1`
 - `LISTENER_PORT` — default `8787`
 
 ## Start listener
 ```bash
 export GITHUB_WEBHOOK_SECRET='replace-me'
-export ALLOWED_REPOS='renshangh/real-estate-assistant'
+export ALLOWED_REPOS='renshangh/real-estate-assistant,renshangh/openclaw-remote-deploy'
+export ORCHESTRATION_REMOTE_DEPLOY_PATH="$HOME/.openclaw/workspace/openclaw-remote-deploy"
 python -m orchestration.webhook_listener
 ```
 
