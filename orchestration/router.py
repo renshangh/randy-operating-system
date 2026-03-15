@@ -14,38 +14,27 @@ RESULT_LABELS = {"dispatch:running", "dispatch:done", "dispatch:blocked", "dispa
 
 def _default_repo_paths() -> dict[str, str]:
     home = Path.home()
-    repo_paths: dict[str, str] = {}
 
-    env_reta = os.environ.get("ORCHESTRATION_RETA_PATH")
-    if env_reta:
-        repo_paths["renshangh/real-estate-assistant"] = env_reta
-    else:
-        ember_reta = home / ".openclaw" / "workspace-ember" / "real-estate-assistant"
-        if ember_reta.exists():
-            repo_paths["renshangh/real-estate-assistant"] = str(ember_reta)
-        else:
-            main_reta = home / ".openclaw" / "workspace" / "real-estate-assistant"
-            repo_paths["renshangh/real-estate-assistant"] = str(main_reta)
+    def resolve_repo_path(env_var: str, canonical_name: str) -> str:
+        env_path = os.environ.get(env_var)
+        if env_path:
+            return env_path
+        return str(home / "repo" / canonical_name)
 
-    env_remote = os.environ.get("ORCHESTRATION_REMOTE_DEPLOY_PATH")
-    if env_remote:
-        repo_paths["renshangh/openclaw-remote-deploy"] = env_remote
-    else:
-        main_remote = home / ".openclaw" / "workspace" / "openclaw-remote-deploy"
-        repo_paths["renshangh/openclaw-remote-deploy"] = str(main_remote)
-
-    env_marketing = os.environ.get("ORCHESTRATION_MARKETING_OPS_PATH")
-    if env_marketing:
-        repo_paths["renshangh/marketing-ops"] = env_marketing
-    else:
-        canonical_marketing = home / "repo" / "marketing-ops"
-        if canonical_marketing.exists():
-            repo_paths["renshangh/marketing-ops"] = str(canonical_marketing)
-        else:
-            legacy_marketing = home / ".openclaw" / "workspace-sarah" / "marketing-ops"
-            repo_paths["renshangh/marketing-ops"] = str(legacy_marketing)
-
-    return repo_paths
+    return {
+        "renshangh/real-estate-assistant": resolve_repo_path(
+            "ORCHESTRATION_RETA_PATH",
+            "real-estate-assistant",
+        ),
+        "renshangh/openclaw-remote-deploy": resolve_repo_path(
+            "ORCHESTRATION_REMOTE_DEPLOY_PATH",
+            "openclaw-remote-deploy",
+        ),
+        "renshangh/marketing-ops": resolve_repo_path(
+            "ORCHESTRATION_MARKETING_OPS_PATH",
+            "marketing-ops",
+        ),
+    }
 
 class Router:
     def __init__(self, ledger_path: str | Path | None = None, repo_paths: dict[str, str] | None = None):
