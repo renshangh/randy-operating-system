@@ -14,7 +14,7 @@ from orchestration.router import Router
 
 LOGGER = logging.getLogger("github_webhook_listener")
 SUPPORTED_EVENTS = {"issues", "issue_comment"}
-SUPPORTED_ISSUE_ACTIONS = {"opened", "edited", "labeled", "unlabeled", "reopened"}
+SUPPORTED_ISSUE_ACTIONS = {"opened", "edited", "labeled", "reopened"}
 SUPPORTED_COMMENT_ACTIONS = {"created"}
 
 
@@ -127,6 +127,7 @@ def _normalize_event(payload: dict[str, Any], event_type: str, delivery_id: str)
     labels = [label.get("name") for label in issue.get("labels", []) if label.get("name")]
     comment = payload.get("comment") or {}
     sender = payload.get("sender") or {}
+    event_label = (payload.get("label") or {}).get("name", "")
 
     return {
         "delivery_id": delivery_id,
@@ -138,6 +139,7 @@ def _normalize_event(payload: dict[str, Any], event_type: str, delivery_id: str)
         "issue_body": issue.get("body", ""),
         "issue_state": issue.get("state", ""),
         "labels": labels,
+        "event_label": event_label,
         "comment_body": comment.get("body", ""),
         "sender_login": sender.get("login", ""),
         "html_url": issue.get("html_url", ""),
@@ -151,7 +153,11 @@ def _is_actionable(normalized_event: dict[str, Any]) -> bool:
     issue_state = normalized_event["issue_state"]
 
     if event_type == "issues":
-        return issue_state == "open" and action in SUPPORTED_ISSUE_ACTIONS
+        if issue_state != "open" or action not in SUPPORTED_ISSUE_ACTIONS:
+            return False
+        if action == "labeled":
+            return (normalized_event.get("event_label") or "") == "dispatch:ready"
+        return True
 
     if event_type == "issue_comment":
         if action not in SUPPORTED_COMMENT_ACTIONS:

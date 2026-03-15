@@ -46,6 +46,14 @@ class RunLedger:
             ).fetchone()
             return row is not None
 
+    def count_runs(self, repository_full_name: str, issue_number: int) -> int:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM run_ledger WHERE repository_full_name = ? AND issue_number = ? AND dispatch_decision IN ('running', 'done', 'failed')",
+                (repository_full_name, issue_number),
+            ).fetchone()
+            return int(row[0] if row else 0)
+
     def record(self, delivery_id: str, repository_full_name: str, issue_number: int, dispatch_decision: str, run_id: str | None = None, note: str | None = None) -> None:
         with self._connect() as conn:
             conn.execute(

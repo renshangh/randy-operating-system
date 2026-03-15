@@ -13,7 +13,7 @@ class EmberRunner(BaseRunner):
 
     def __init__(self, logs_dir: str | Path | None = None, timeout_seconds: int = 600):
         base_dir = Path(__file__).resolve().parent.parent
-        self.logs_dir = Path(logs_dir or (base_dir / "logs" / "ember"))
+        self.logs_dir = Path(logs_dir or (base_dir / "logs" / self.agent_name))
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.timeout_seconds = timeout_seconds
 
@@ -24,7 +24,7 @@ class EmberRunner(BaseRunner):
         command = [
             "zsh",
             "-lc",
-            f'cd {self._shell_quote(task_packet["local_repo_path"])} && openclaw agent --agent ember --message {self._shell_quote(prompt)} --json',
+            f'cd {self._shell_quote(task_packet["local_repo_path"])} && openclaw agent --agent {self._shell_quote(self.agent_name)} --message {self._shell_quote(prompt)} --json',
         ]
 
         try:
@@ -96,3 +96,11 @@ class EmberRunner(BaseRunner):
 
     def _shell_quote(self, value: str) -> str:
         return "'" + value.replace("'", "'\"'\"'") + "'"
+
+
+class SarahRunner(EmberRunner):
+    agent_name = "sarah"
+
+
+class SentinelRunner(EmberRunner):
+    agent_name = "sentinel"

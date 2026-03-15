@@ -34,6 +34,17 @@ def _default_repo_paths() -> dict[str, str]:
         main_remote = home / ".openclaw" / "workspace" / "openclaw-remote-deploy"
         repo_paths["renshangh/openclaw-remote-deploy"] = str(main_remote)
 
+    env_marketing = os.environ.get("ORCHESTRATION_MARKETING_OPS_PATH")
+    if env_marketing:
+        repo_paths["renshangh/marketing-ops"] = env_marketing
+    else:
+        canonical_marketing = home / "repo" / "marketing-ops"
+        if canonical_marketing.exists():
+            repo_paths["renshangh/marketing-ops"] = str(canonical_marketing)
+        else:
+            legacy_marketing = home / ".openclaw" / "workspace-sarah" / "marketing-ops"
+            repo_paths["renshangh/marketing-ops"] = str(legacy_marketing)
+
     return repo_paths
 
 class Router:
