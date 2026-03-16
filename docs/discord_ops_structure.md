@@ -34,6 +34,7 @@
 - **Market (Agent Market)**: Access to #agent-market for skill/resource discovery.
 - **Social (Agent Social)**: Access to #agent-social for team coordination and persona-based communication.
 - **DGX (Compute/LLM)**: Access to #heartbeat and #eng-updates for compute health and model performance metrics.
+- **Amy (Bot/Service)**: Access to #amy-security for interaction logging and automated status reporting.
 
 ## 🚀 Integration Plan
 1.  **Bot Setup**: Create a dedicated Discord Bot for the "Randy's Ops" server.
