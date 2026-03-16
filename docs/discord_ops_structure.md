@@ -28,7 +28,7 @@
 ## 👥 Roles & Permissions
 - **Randy (Owner)**: Full admin; only user allowed to trigger destructive shell commands.
 - **Aether (Orchestrator)**: Permissions to post in all channels; primary relay.
-- **Sarah (Strategic Ops)**: Restricted to Job Hunt and Announcements.
+- **Sarah (Strategic Ops/Architect)**: Full access to Job Hunt, Announcements, Development, and QA for end-to-end solution architecture and oversight.
 - **Ember (Dev)**: Restricted to Eng-Updates and Leads-Tailoring.
 - **Sentinel (Security/QA)**: Permissions for Amy-Security and QA-Reports.
 - **Market (Agent Market)**: Access to #agent-market for skill/resource discovery.
