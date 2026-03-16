@@ -2,7 +2,7 @@
 
 ## 🏢 Server Structure
 **Name:** Randy's Ops
-**Primary Function:** Unified command center for Randy (Human) and the Agent Team (Aether, Sarah, Ember, Sentinel).
+**Primary Function:** Unified command center for Randy (Human) and the Agent Team (Aether, Sarah, Ember, Sentinel, Market, Social, DGX, and Amy).
 
 ## 📁 Category: 🛰️ COMMAND CENTER
 - **#announcements**: High-level status updates from Aether (e.g., "Scouting Complete", "Backup Successful").
