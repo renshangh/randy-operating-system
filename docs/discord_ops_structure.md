@@ -31,8 +31,12 @@
 - **Sarah (Strategic Ops)**: Restricted to Job Hunt and Announcements.
 - **Ember (Dev)**: Restricted to Eng-Updates and Leads-Tailoring.
 - **Sentinel (Security/QA)**: Permissions for Amy-Security and QA-Reports.
+- **Market (Agent Market)**: Access to #agent-market for skill/resource discovery.
+- **Social (Agent Social)**: Access to #agent-social for team coordination and persona-based communication.
+- **DGX (Compute/LLM)**: Access to #heartbeat and #eng-updates for compute health and model performance metrics.
 
 ## 🚀 Integration Plan
 1.  **Bot Setup**: Create a dedicated Discord Bot for the "Randy's Ops" server.
 2.  **Webhook Sync**: Connect GitHub webhooks to the relevant channels (e.g., #leads-raw, #eng-updates).
 3.  **Discord Skill**: Install the `discord` skill for Aether to enable direct messaging and channel management.
+4.  **Agent Expansion**: Provision specific webhook-based presence for Market, Social, and DGX in their respective channels.
