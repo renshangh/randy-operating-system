@@ -8,6 +8,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib import request
+from urllib.error import HTTPError, URLError
 
 from orchestration.config import ListenerConfig
 from orchestration.reporting import report_result
@@ -95,11 +96,19 @@ class WebhookHandler(BaseHTTPRequestHandler):
         LOGGER.info("Router result: %s", router_result)
         runner_result = router_result.get("runner_result")
         reporting_result = None
+        discord_result = None
         if router_result.get("accepted") and runner_result:
             reporting_result = report_result(repo_name, normalized_event["issue_number"], runner_result)
+        if router_result.get("accepted"):
+            discord_result = _send_discord_heartbeat(self.server.config, normalized_event, router_result)
         self._json_response(
             HTTPStatus.ACCEPTED,
-            {"status": "accepted", "router": router_result, "reporting": reporting_result},
+            {
+                "status": "accepted",
+                "router": router_result,
+                "reporting": reporting_result,
+                "discord": discord_result,
+            },
         )
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
@@ -111,6 +120,75 @@ class WebhookServer(ThreadingHTTPServer):
         super().__init__(server_address, WebhookHandler)
         self.config = config
         self.router = router
+
+
+def _send_discord_heartbeat(
+    config: ListenerConfig,
+    normalized_event: dict[str, Any],
+    router_result: dict[str, Any],
+) -> dict[str, Any] | None:
+    webhook_url = config.discord_heartbeat_webhook_url.strip()
+    if not webhook_url:
+        return {"sent": False, "reason": "webhook_not_configured"}
+
+    if not router_result.get("status", "").startswith("completion:"):
+        return {"sent": False, "reason": "not_completion_event"}
+
+    issue_number = normalized_event.get("issue_number")
+    repo_name = normalized_event.get("repository_full_name")
+    issue_title = normalized_event.get("issue_title") or "(untitled issue)"
+    issue_url = normalized_event.get("issue_url") or ""
+    status = (router_result.get("status") or "completion:unknown").split(":", 1)[-1]
+    agent = router_result.get("agent") or "unknown"
+    summary = router_result.get("summary") or "No summary provided."
+    mention = f"<@{config.discord_aether_user_id}> " if config.discord_aether_user_id else ""
+
+    content = (
+        f"{mention}GitHub completion received: **{status}** from **{agent}**\n"
+        f"Repo: `{repo_name}`\n"
+        f"Issue: #{issue_number} — {issue_title}\n"
+        f"Summary: {summary}"
+    )
+    if issue_url:
+        content += f"\n{issue_url}"
+
+    payload = json.dumps({"content": content}).encode("utf-8")
+    req = request.Request(
+        webhook_url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with request.urlopen(req, timeout=10) as response:
+            status_code = getattr(response, "status", response.getcode())
+        LOGGER.info(
+            "Discord heartbeat sent repo=%s issue=%s status=%s agent=%s http_status=%s",
+            repo_name,
+            issue_number,
+            status,
+            agent,
+            status_code,
+        )
+        return {"sent": True, "http_status": status_code}
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        LOGGER.error(
+            "Discord heartbeat failed repo=%s issue=%s http_status=%s body=%s",
+            repo_name,
+            issue_number,
+            exc.code,
+            body,
+        )
+        return {"sent": False, "http_status": exc.code, "error": body}
+    except URLError as exc:
+        LOGGER.error(
+            "Discord heartbeat failed repo=%s issue=%s error=%s",
+            repo_name,
+            issue_number,
+            exc,
+        )
+        return {"sent": False, "error": str(exc)}
 
 
 def _verify_signature(raw_body: bytes, received_signature: str, secret: str) -> bool:
@@ -138,6 +216,7 @@ def _normalize_event(payload: dict[str, Any], event_type: str, delivery_id: str)
         "repository_full_name": repository.get("full_name", ""),
         "issue_number": issue.get("number"),
         "issue_title": issue.get("title", ""),
+        "issue_url": issue.get("html_url", ""),
         "issue_body": issue.get("body", ""),
         "issue_state": issue.get("state", ""),
         "labels": labels,
