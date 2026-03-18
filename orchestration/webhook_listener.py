@@ -156,7 +156,11 @@ def _send_discord_heartbeat(
     req = request.Request(
         webhook_url,
         data=payload,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "openclaw-github-webhook-listener/1.0",
+        },
         method="POST",
     )
     try:
