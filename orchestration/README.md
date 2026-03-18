@@ -31,6 +31,7 @@ python -m orchestration.webhook_listener
 
 ## Notes
 - The listener intentionally stays narrow: receive, verify, normalize, and hand off.
-- The router currently resolves only `agent:ember` for `renshangh/real-estate-assistant`.
+- Dispatch start remains label-driven via `dispatch:ready` + exactly one `agent:*` label.
+- Specialist completion comments beginning with `Status: done`, `Status: blocked`, or `Status: failed` are treated as actionable completion events and recorded without redispatching work.
 - The Ember adapter boundary exists and writes local artifacts, but live runtime invocation is not yet wired.
 - Reporting currently posts concise issue comments and applies result labels via `gh`.

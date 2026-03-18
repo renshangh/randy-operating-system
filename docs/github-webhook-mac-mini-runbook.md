@@ -36,7 +36,13 @@ GitHub Webhook
 - Tailscale Funnel enabled for the tailnet/account
 - GitHub CLI authenticated on the Mac Mini if reporting back to GitHub is required
 - Local orchestration repo present on the Mac Mini at:
-  - `~/.openclaw/workspace-ember/randy-operating-system`
+  - `~/repo/randy-operating-system`
+
+## Canonical Router Source
+The canonical live router and webhook listener on the Mac Mini run from:
+- `~/repo/randy-operating-system`
+
+Do not treat older `~/.openclaw/workspace-ember/...` copies as the active router source unless they have been explicitly reinstalled as the live LaunchAgent target.
 
 ## 1. Connect to the Mac Mini
 From the operator machine:
@@ -49,10 +55,10 @@ ssh danielshan@192.168.1.44
 From the Mac Mini:
 
 ```bash
-cd ~/.openclaw/workspace-ember/randy-operating-system
+cd ~/repo/randy-operating-system
 export PYTHONPATH=$PWD
 export GITHUB_WEBHOOK_SECRET='reta-webhook-2026'
-export ALLOWED_REPOS='renshangh/real-estate-assistant'
+export ALLOWED_REPOS='renshangh/real-estate-assistant,renshangh/openclaw-remote-deploy,renshangh/marketing-ops,renshangh/randy-job-hunt-pipeline,renshangh/randy-operating-system,renshangh/knowledge-base'
 export LISTENER_HOST='127.0.0.1'
 export LISTENER_PORT='8787'
 nohup python3 -m orchestration.webhook_listener >/tmp/ember_webhook_listener.log 2>&1 &
@@ -173,7 +179,7 @@ Expected examples:
 Check recent Ember artifacts:
 
 ```bash
-ls -lt ~/.openclaw/workspace-ember/randy-operating-system/orchestration/logs/ember | head
+ls -lt ~/repo/randy-operating-system/orchestration/logs/ember | head
 ```
 
 ## 7. Trigger a safe end-to-end test
@@ -246,9 +252,9 @@ Checks:
 
 ```bash
 sed -n '1,260p' /tmp/ember_webhook_listener.log
-ls -lt ~/.openclaw/workspace-ember/randy-operating-system/orchestration/logs/ember | head
-sqlite3 ~/.openclaw/workspace-ember/randy-operating-system/orchestration/run_ledger.sqlite ".tables"
-sqlite3 -header -column ~/.openclaw/workspace-ember/randy-operating-system/orchestration/run_ledger.sqlite "select delivery_id, repository_full_name, issue_number, seen_at, dispatch_decision, run_id, note from run_ledger order by seen_at desc limit 20;"
+ls -lt ~/repo/randy-operating-system/orchestration/logs/ember | head
+sqlite3 ~/repo/randy-operating-system/orchestration/run_ledger.sqlite ".tables"
+sqlite3 -header -column ~/repo/randy-operating-system/orchestration/run_ledger.sqlite "select delivery_id, repository_full_name, issue_number, seen_at, dispatch_decision, run_id, note from run_ledger order by seen_at desc limit 20;"
 ```
 
 ### Problem: listener fails to start with `Address already in use`

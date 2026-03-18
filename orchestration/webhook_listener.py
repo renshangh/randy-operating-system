@@ -91,6 +91,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
             normalized_event.get("issue_number"),
         )
         router_result = self.server.router.handle_event(normalized_event)
+        LOGGER.info("Router result: %s", router_result)
         runner_result = router_result.get("runner_result")
         reporting_result = None
         if router_result.get("accepted") and runner_result:
@@ -163,7 +164,15 @@ def _is_actionable(normalized_event: dict[str, Any]) -> bool:
         if action not in SUPPORTED_COMMENT_ACTIONS:
             return False
         body = (normalized_event.get("comment_body") or "").strip()
-        return body.startswith("/retry") or body.startswith("/status") or body.startswith("/hold")
+        lowered = body.lower()
+        return (
+            body.startswith("/retry")
+            or body.startswith("/status")
+            or body.startswith("/hold")
+            or lowered.startswith("status: done")
+            or lowered.startswith("status: blocked")
+            or lowered.startswith("status: failed")
+        )
 
     return False
 

@@ -21,8 +21,10 @@ At login / LaunchAgent load time it:
 ## Important assumptions
 Current template assumes:
 - Mac Mini user: `danielshan`
-- repo path:
-  - `/Users/danielshan/.openclaw/workspace-ember/randy-operating-system`
+- canonical live repo path:
+  - `/Users/danielshan/repo/randy-operating-system`
+
+This repo path is the canonical router source for the Mac Mini LaunchAgent. Older `workspace-ember` copies are not the default live source.
 - listener log:
   - `/tmp/ember_webhook_listener.log`
 - listener bind:
@@ -35,29 +37,29 @@ From the operator machine:
 rsync -av \
   scripts/start_github_webhook_listener.sh \
   deploy/launchagents/ai.openclaw.github-webhook-listener.plist \
-  danielshan@192.168.1.44:/Users/danielshan/.openclaw/workspace-ember/randy-operating-system/
+  danielshan@192.168.1.44:/Users/danielshan/repo/randy-operating-system/
 ```
 
 If the deploy directory does not already exist remotely, copy with explicit destinations:
 
 ```bash
-ssh danielshan@192.168.1.44 'mkdir -p ~/.openclaw/workspace-ember/randy-operating-system/deploy/launchagents'
-rsync -av scripts/start_github_webhook_listener.sh danielshan@192.168.1.44:/Users/danielshan/.openclaw/workspace-ember/randy-operating-system/scripts/
-rsync -av deploy/launchagents/ai.openclaw.github-webhook-listener.plist danielshan@192.168.1.44:/Users/danielshan/.openclaw/workspace-ember/randy-operating-system/deploy/launchagents/
+ssh danielshan@192.168.1.44 'mkdir -p ~/repo/randy-operating-system/deploy/launchagents'
+rsync -av scripts/start_github_webhook_listener.sh danielshan@192.168.1.44:/Users/danielshan/repo/randy-operating-system/scripts/
+rsync -av deploy/launchagents/ai.openclaw.github-webhook-listener.plist danielshan@192.168.1.44:/Users/danielshan/repo/randy-operating-system/deploy/launchagents/
 ```
 
 ## 2. Make the startup script executable
 On the Mac Mini:
 
 ```bash
-chmod +x ~/.openclaw/workspace-ember/randy-operating-system/scripts/start_github_webhook_listener.sh
+chmod +x ~/repo/randy-operating-system/scripts/start_github_webhook_listener.sh
 ```
 
 ## 3. Review the LaunchAgent template
 Open and verify the values in:
 
 ```bash
-~/.openclaw/workspace-ember/randy-operating-system/deploy/launchagents/ai.openclaw.github-webhook-listener.plist
+~/repo/randy-operating-system/deploy/launchagents/ai.openclaw.github-webhook-listener.plist
 ```
 
 Pay special attention to:
@@ -72,7 +74,7 @@ On the Mac Mini:
 
 ```bash
 mkdir -p ~/Library/LaunchAgents
-cp ~/.openclaw/workspace-ember/randy-operating-system/deploy/launchagents/ai.openclaw.github-webhook-listener.plist ~/Library/LaunchAgents/
+cp ~/repo/randy-operating-system/deploy/launchagents/ai.openclaw.github-webhook-listener.plist ~/Library/LaunchAgents/
 ```
 
 ## 5. Unload any old instance first (safe if absent)
