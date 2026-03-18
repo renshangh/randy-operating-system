@@ -33,5 +33,6 @@ python -m orchestration.webhook_listener
 - The listener intentionally stays narrow: receive, verify, normalize, and hand off.
 - Dispatch start remains label-driven via `dispatch:ready` + exactly one `agent:*` label.
 - Specialist completion comments beginning with `Status: done`, `Status: blocked`, or `Status: failed` are treated as actionable completion events and recorded without redispatching work.
+- Optional: set `DISCORD_HEARTBEAT_WEBHOOK_URL` (and `DISCORD_AETHER_USER_ID`) to auto-post completion notices to Discord.
 - The Ember adapter boundary exists and writes local artifacts, but live runtime invocation is not yet wired.
 - Reporting currently posts concise issue comments and applies result labels via `gh`.

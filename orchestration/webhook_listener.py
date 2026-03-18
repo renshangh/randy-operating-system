@@ -7,6 +7,7 @@ import logging
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
+from urllib import request
 
 from orchestration.config import ListenerConfig
 from orchestration.reporting import report_result
@@ -155,6 +156,50 @@ def _is_actionable(normalized_event: dict[str, Any]) -> bool:
 
     if event_type == "issues":
         if issue_state != "open" or action not in SUPPORTED_ISSUE_ACTIONS:
+            return False
+        if action == "labeled":
+            return (normalized_event.get("event_label") or "") == "dispatch:ready"
+        return True
+
+    if event_type == "issue_comment":
+        if action not in SUPPORTED_COMMENT_ACTIONS:
+            return False
+        body = (normalized_event.get("comment_body") or "").strip()
+        lowered = body.lower()
+        return (
+            body.startswith("/retry")
+            or body.startswith("/status")
+            or body.startswith("/hold")
+            or lowered.startswith("status: done")
+            or lowered.startswith("status: blocked")
+            or lowered.startswith("status: failed")
+        )
+
+    return False
+
+
+def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
+    config = ListenerConfig.from_env()
+    router = Router()
+    server = WebhookServer((config.host, config.port), config, router)
+    LOGGER.info(
+        "Starting GitHub webhook listener host=%s port=%s allowed_repos=%s",
+        config.host,
+        config.port,
+        ",".join(config.allowed_repos),
+    )
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
+_ == "__main__":
+    main()
+ACTIONS:
             return False
         if action == "labeled":
             return (normalized_event.get("event_label") or "") == "dispatch:ready"
