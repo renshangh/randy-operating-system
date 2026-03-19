@@ -9,6 +9,7 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `run_ledger.py` — local SQLite delivery/run ledger
 - `task_packet.py` — compact task packet builder
 - `aether_relay_ingress.py` — MacBook-side relay ingress skeleton with auth, validation, dedupe, and ack behavior
+- `relay_client.py` — Mac Mini-side RPC relay sender for MacBook ingress delivery
 - `adapters/base_runner.py` — runner result contract
 - `adapters/ember_runner.py` — Ember adapter scaffold
 - `github_client.py` — minimal GitHub issue comment/label wrapper
@@ -55,6 +56,7 @@ python -m orchestration.webhook_listener
 - Phase 1 direct wake is now wired for accepted completion comments and operator commands (`/retry`, `/status`, `/hold`) using `openclaw agent --session-id ...`.
 - The new `aether_relay_ingress.py` is the MacBook-side ingress skeleton for Phase 1 of issue #187; it accepts only narrow allowed classifications, dedupes on `delivery_id`, and returns a compact JSON ack.
 - The new `relay_client.py` is the Mac Mini-side RPC sender for Phase 2 of issue #187; when `ENABLE_AETHER_RELAY=1`, the listener uses it for accepted completion/command events instead of the local direct-wake path.
+- `scripts/start_aether_relay_ingress.sh` plus `deploy/launchagents/ai.openclaw.aether-relay-ingress.plist` provide the first persistent-service scaffold for running the MacBook ingress safely behind explicit env values.
 - Discord heartbeat remains a human-facing mirror; the direct wake path is the machine trigger when enabled.
 - `run_ledger.sqlite` now records routing plus direct wake / Discord mirror state for each accepted delivery.
 - The Ember adapter boundary exists and writes local artifacts, but live runtime invocation is not yet wired.
