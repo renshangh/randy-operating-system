@@ -11,6 +11,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+import time
 
 ALLOWED_CLASSIFICATIONS = {
     "completion:done",
@@ -43,6 +44,8 @@ class RelayIngressConfig:
     session_store_path: str = ""
     openclaw_bin: str = ""
     inject_timeout_seconds: int = 30
+    inject_retry_attempts: int = 4
+    inject_retry_delay_seconds: float = 2.0
     dedupe_db_path: str = "orchestration/aether_relay_ingress.sqlite"
 
     @classmethod
@@ -58,6 +61,8 @@ class RelayIngressConfig:
             session_store_path=os.environ.get("AETHER_SESSION_STORE", ""),
             openclaw_bin=os.environ.get("OPENCLAW_BIN", shutil.which("openclaw") or "openclaw"),
             inject_timeout_seconds=int(os.environ.get("AETHER_RELAY_TIMEOUT_SECONDS", "30")),
+            inject_retry_attempts=int(os.environ.get("AETHER_RELAY_RETRY_ATTEMPTS", "4")),
+            inject_retry_delay_seconds=float(os.environ.get("AETHER_RELAY_RETRY_DELAY_SECONDS", "2")),
             dedupe_db_path=os.environ.get(
                 "AETHER_RELAY_DEDUPE_DB", "orchestration/aether_relay_ingress.sqlite"
             ),
@@ -165,25 +170,35 @@ class AetherSessionInjector:
             str(self.config.inject_timeout_seconds),
             "--json",
         ]
-        try:
-            completed = subprocess.run(command, capture_output=True, text=True, check=False)
-        except Exception as exc:  # noqa: BLE001
-            return {
-                "ok": False,
-                "error": str(exc),
-            }
-        stdout = (completed.stdout or "").strip()
-        stderr = (completed.stderr or "").strip()
-        if completed.returncode != 0:
-            return {
-                "ok": False,
-                "error": stderr or stdout or f"openclaw agent exit {completed.returncode}",
-            }
+
+        last_error = "session_injection_failed"
+        attempts = max(1, self.config.inject_retry_attempts)
+        for attempt in range(1, attempts + 1):
+            try:
+                completed = subprocess.run(command, capture_output=True, text=True, check=False)
+            except Exception as exc:  # noqa: BLE001
+                last_error = str(exc)
+                completed = None
+            else:
+                stdout = (completed.stdout or "").strip()
+                stderr = (completed.stderr or "").strip()
+                if completed.returncode == 0:
+                    return {
+                        "ok": True,
+                        "session_label": self.config.aether_session_label,
+                        "session_id": session_id,
+                        "stdout": stdout,
+                    }
+                last_error = stderr or stdout or f"openclaw agent exit {completed.returncode}"
+
+            if attempt < attempts and self._is_retryable_error(last_error):
+                time.sleep(self.config.inject_retry_delay_seconds * attempt)
+                continue
+            break
+
         return {
-            "ok": True,
-            "session_label": self.config.aether_session_label,
-            "session_id": session_id,
-            "stdout": stdout,
+            "ok": False,
+            "error": last_error,
         }
 
     def resolve_session_id(self) -> str | None:
@@ -219,6 +234,10 @@ class AetherSessionInjector:
         if candidates:
             return max(candidates, key=lambda s: s.get("updatedAt", 0)).get("sessionId")
         return None
+
+    def _is_retryable_error(self, error: str) -> bool:
+        lowered = error.lower()
+        return "session file locked" in lowered or "timeout" in lowered
 
     def _format_message(self, packet: dict[str, Any]) -> str:
         payload = json.dumps(packet, ensure_ascii=False, indent=2)

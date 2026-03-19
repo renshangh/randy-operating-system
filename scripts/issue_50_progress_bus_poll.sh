@@ -1,6 +1,8 @@
 #!/bin/zsh
 set -euo pipefail
 
+export PATH="${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin"
+
 REPO="renshangh/randy-operating-system"
 ISSUE_NUMBER="120"
 STATE_DIR="$HOME/.openclaw/workspace/randy-operating-system/.state"
@@ -9,6 +11,18 @@ STATE_FILE="$STATE_DIR/issue_120_last_comment_id"
 LOG_FILE="$LOG_DIR/issue_120_reporter_bus.log"
 
 mkdir -p "$STATE_DIR" "$LOG_DIR"
+
+if ! command -v gh >/dev/null 2>&1; then
+  printf '%s | issue=%s | fatal=missing_gh | PATH=%s\n' \
+    "$(date '+%Y-%m-%d %H:%M:%S %Z')" "$ISSUE_NUMBER" "$PATH" >> "$LOG_FILE"
+  exit 127
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s | issue=%s | fatal=missing_jq | PATH=%s\n' \
+    "$(date '+%Y-%m-%d %H:%M:%S %Z')" "$ISSUE_NUMBER" "$PATH" >> "$LOG_FILE"
+  exit 127
+fi
 
 last_id="0"
 if [[ -f "$STATE_FILE" ]]; then
