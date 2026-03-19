@@ -35,7 +35,7 @@
       <key>PATH</key>
       <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
       <key>AETHER_RELAY_HOST</key>
-      <string>127.0.0.1</string>
+      <string>0.0.0.0</string>
       <key>AETHER_RELAY_PORT</key>
       <string>8791</string>
       <key>AETHER_RELAY_SENDER_ID</key>

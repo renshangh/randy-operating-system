@@ -24,7 +24,7 @@ This runbook covers only the MacBook ingress side for issue #187.
 - `AETHER_SESSION_ID`
 
 ## Recommended defaults
-- `AETHER_RELAY_HOST=127.0.0.1`
+- `AETHER_RELAY_HOST=0.0.0.0` for cross-host relay over the tailnet (do not expose publicly)
 - `AETHER_RELAY_PORT=8791`
 - `AETHER_RELAY_SENDER_ID=mac-mini`
 - `AETHER_SESSION_LABEL=aether-ops-inbox`
