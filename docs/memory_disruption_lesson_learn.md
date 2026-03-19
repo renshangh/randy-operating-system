@@ -27,7 +27,15 @@
 4. **Optionally re-enable Live Board cron** when the board is needed again; otherwise keep it idle.
 5. **Reference material:** link to runbook commits `5386164` (code fix) and `6e5480b` (docs cleanup) plus this lesson doc in the main issue (#176 or the parent). 
 
-## 5. References
+## 5. SOP Checklist
+1. Verify `issue_50_progress_bus_poll.sh` still runs under strict PATH and logs failure with `missing_gh`/`missing_jq` tags when dependencies are absent.
+2. Confirm `~/Library/LaunchAgents/ai.openclaw.aether-relay-ingress.plist` points to `~/.openclaw/workspace/randy-operating-system` paths and `AETHER_RELAY_DEDUPE_DB` is the workspace copy.
+3. Check `launchctl print gui/$(id -u)/ai.openclaw.aether-relay-ingress` to ensure `OPENCLAW_BIN`, `AETHER_SESSION_ID`, and `AETHER_SESSION_LABEL` exist (pin `AETHER_SESSION_ID` until inbox discovery is stable).
+4. Run `python3 - <<'PY' ... localhost-fix-probe-XXXX` probe pattern and confirm ledger row ends in `acked` for the reused session ID; repeat with `sqlite3` lookups and log tail.
+5. When CLI logs show `missing_aether_session_id`, either pin a session ID or restart the session registry file via `openclaw agent --session-id ... --open-session` so the relay injector sees a non-empty `sessions.json`.
+6. Keep the Live Control Board cron off unless explicitly requested.
+
+## 6. References
 - GitHub commits: `5386164` (code hardening), `6e5480b` (docs cleanup)
 - Issues: `#176` (Memory Disruption relay work), `#140` (agent coordination), `#187` (Aether relay ingress)
 - Probes: `localhost-fix-probe-009/010/011` (ledger records) recorded in `orchestration/aether_relay_ingress.sqlite`
