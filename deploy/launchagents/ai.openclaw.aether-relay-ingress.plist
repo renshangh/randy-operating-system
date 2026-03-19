@@ -46,6 +46,8 @@
       <string>aether-ops-inbox</string>
       <key>AETHER_RELAY_DEDUPE_DB</key>
       <string>/Users/renshan/repo/randy-operating-system/orchestration/aether_relay_ingress.sqlite</string>
+      <key>OPENCLAW_BIN</key>
+      <string>/Users/renshan/.nvm/versions/node/v23.8.0/bin/openclaw</string>
       <key>AETHER_RELAY_SECRET</key>
       <string>REPLACE_ME</string>
       <key>AETHER_SESSION_ID</key>

@@ -13,6 +13,7 @@ export AETHER_RELAY_SENDER_ID="${AETHER_RELAY_SENDER_ID:-mac-mini}"
 export AETHER_RELAY_DEDUPE_DB="${AETHER_RELAY_DEDUPE_DB:-$REPO_DIR/orchestration/aether_relay_ingress.sqlite}"
 export AETHER_RELAY_TIMEOUT_SECONDS="${AETHER_RELAY_TIMEOUT_SECONDS:-30}"
 export AETHER_SESSION_LABEL="${AETHER_SESSION_LABEL:-aether-ops-inbox}"
+export OPENCLAW_BIN="${OPENCLAW_BIN:-$HOME/.nvm/versions/node/v23.8.0/bin/openclaw}"
 
 cd "$REPO_DIR"
 exec python3 -m orchestration.aether_relay_ingress >>"$LOG_FILE" 2>&1

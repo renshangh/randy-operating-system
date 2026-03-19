@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 from dataclasses import dataclass
@@ -37,6 +38,7 @@ class RelayIngressConfig:
     relay_sender_id: str = "mac-mini"
     aether_session_label: str = "aether-ops-inbox"
     aether_session_id: str = ""
+    openclaw_bin: str = ""
     inject_timeout_seconds: int = 30
     dedupe_db_path: str = "orchestration/aether_relay_ingress.sqlite"
 
@@ -49,6 +51,7 @@ class RelayIngressConfig:
             relay_sender_id=os.environ.get("AETHER_RELAY_SENDER_ID", "mac-mini"),
             aether_session_label=os.environ.get("AETHER_SESSION_LABEL", "aether-ops-inbox"),
             aether_session_id=os.environ.get("AETHER_SESSION_ID", ""),
+            openclaw_bin=os.environ.get("OPENCLAW_BIN", shutil.which("openclaw") or "openclaw"),
             inject_timeout_seconds=int(os.environ.get("AETHER_RELAY_TIMEOUT_SECONDS", "30")),
             dedupe_db_path=os.environ.get(
                 "AETHER_RELAY_DEDUPE_DB", "orchestration/aether_relay_ingress.sqlite"
@@ -146,7 +149,7 @@ class AetherSessionInjector:
 
         message = self._format_message(packet)
         command = [
-            "openclaw",
+            self.config.openclaw_bin,
             "agent",
             "--session-id",
             self.config.aether_session_id,
@@ -156,7 +159,13 @@ class AetherSessionInjector:
             str(self.config.inject_timeout_seconds),
             "--json",
         ]
-        completed = subprocess.run(command, capture_output=True, text=True, check=False)
+        try:
+            completed = subprocess.run(command, capture_output=True, text=True, check=False)
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "ok": False,
+                "error": str(exc),
+            }
         stdout = (completed.stdout or "").strip()
         stderr = (completed.stderr or "").strip()
         if completed.returncode != 0:
