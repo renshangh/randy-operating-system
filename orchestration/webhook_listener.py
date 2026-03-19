@@ -305,9 +305,12 @@ def _is_actionable(normalized_event: dict[str, Any]) -> bool:
             body.startswith("/retry")
             or body.startswith("/status")
             or body.startswith("/hold")
-            or lowered.startswith("status: done")
-            or lowered.startswith("status: blocked")
-            or lowered.startswith("status: failed")
+            or "status: done" in lowered
+            or "status: blocked" in lowered
+            or "status: failed" in lowered
+            or "status:done" in lowered
+            or "status:blocked" in lowered
+            or "status:failed" in lowered
         )
 
     return False

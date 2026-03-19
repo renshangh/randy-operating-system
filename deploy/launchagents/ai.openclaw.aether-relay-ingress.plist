@@ -8,11 +8,11 @@
     <key>ProgramArguments</key>
     <array>
       <string>/bin/zsh</string>
-      <string>/Users/renshan/repo/randy-operating-system/scripts/start_aether_relay_ingress.sh</string>
+      <string>/Users/renshan/.openclaw/workspace/randy-operating-system/scripts/start_aether_relay_ingress.sh</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/renshan/repo/randy-operating-system</string>
+    <string>/Users/renshan/.openclaw/workspace/randy-operating-system</string>
 
     <key>RunAtLoad</key>
     <true/>
@@ -29,7 +29,7 @@
     <key>EnvironmentVariables</key>
     <dict>
       <key>REPO_DIR</key>
-      <string>/Users/renshan/repo/randy-operating-system</string>
+      <string>/Users/renshan/.openclaw/workspace/randy-operating-system</string>
       <key>LOG_FILE</key>
       <string>/tmp/aether_relay_ingress.log</string>
       <key>PATH</key>
@@ -49,8 +49,6 @@
       <key>OPENCLAW_BIN</key>
       <string>/Users/renshan/.nvm/versions/node/v23.8.0/bin/openclaw</string>
       <key>AETHER_RELAY_SECRET</key>
-      <string>REPLACE_ME</string>
-      <key>AETHER_SESSION_ID</key>
       <string>REPLACE_ME</string>
     </dict>
   </dict>

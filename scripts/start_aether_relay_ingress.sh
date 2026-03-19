@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_DIR="${REPO_DIR:-$HOME/repo/randy-operating-system}"
 LOG_FILE="${LOG_FILE:-/tmp/aether_relay_ingress.log}"
 : "${AETHER_RELAY_SECRET:?AETHER_RELAY_SECRET is required}"
-: "${AETHER_SESSION_ID:?AETHER_SESSION_ID is required}"
 export PATH="${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin"
 export PYTHONPATH="$REPO_DIR"
 export AETHER_RELAY_HOST="${AETHER_RELAY_HOST:-127.0.0.1}"

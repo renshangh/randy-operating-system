@@ -37,8 +37,10 @@ class RelayIngressConfig:
     port: int = 8791
     relay_secret: str = ""
     relay_sender_id: str = "mac-mini"
+    aether_agent_id: str = "main"
     aether_session_label: str = "aether-ops-inbox"
     aether_session_id: str = ""
+    session_store_path: str = ""
     openclaw_bin: str = ""
     inject_timeout_seconds: int = 30
     dedupe_db_path: str = "orchestration/aether_relay_ingress.sqlite"
@@ -50,8 +52,10 @@ class RelayIngressConfig:
             port=int(os.environ.get("AETHER_RELAY_PORT", "8791")),
             relay_secret=os.environ.get("AETHER_RELAY_SECRET", ""),
             relay_sender_id=os.environ.get("AETHER_RELAY_SENDER_ID", "mac-mini"),
+            aether_agent_id=os.environ.get("AETHER_AGENT_ID", "main"),
             aether_session_label=os.environ.get("AETHER_SESSION_LABEL", "aether-ops-inbox"),
             aether_session_id=os.environ.get("AETHER_SESSION_ID", ""),
+            session_store_path=os.environ.get("AETHER_SESSION_STORE", ""),
             openclaw_bin=os.environ.get("OPENCLAW_BIN", shutil.which("openclaw") or "openclaw"),
             inject_timeout_seconds=int(os.environ.get("AETHER_RELAY_TIMEOUT_SECONDS", "30")),
             dedupe_db_path=os.environ.get(
@@ -142,7 +146,8 @@ class AetherSessionInjector:
         self.config = config
 
     def inject(self, packet: dict[str, Any]) -> dict[str, Any]:
-        if not self.config.aether_session_id:
+        session_id = self._resolve_session_id()
+        if not session_id:
             return {
                 "ok": False,
                 "error": "missing_aether_session_id",
@@ -153,7 +158,7 @@ class AetherSessionInjector:
             self.config.openclaw_bin,
             "agent",
             "--session-id",
-            self.config.aether_session_id,
+            session_id,
             "--message",
             message,
             "--timeout",
@@ -177,9 +182,43 @@ class AetherSessionInjector:
         return {
             "ok": True,
             "session_label": self.config.aether_session_label,
-            "session_id": self.config.aether_session_id,
+            "session_id": session_id,
             "stdout": stdout,
         }
+
+    def resolve_session_id(self) -> str | None:
+        return self._resolve_session_id()
+
+    def _resolve_session_id(self) -> str | None:
+        if self.config.aether_session_id and self.config.aether_session_id != "REPLACE_ME":
+            return self.config.aether_session_id
+        session_store_path = self.config.session_store_path or os.path.expanduser(
+            f"~/.openclaw/agents/{self.config.aether_agent_id}/sessions/sessions.json"
+        )
+        try:
+            data = json.loads(Path(session_store_path).read_text())
+        except Exception:
+            return None
+        sessions = data.get("sessions", [])
+        candidates = [
+            session
+            for session in sessions
+            if session.get("agentId") == self.config.aether_agent_id
+            and session.get("kind") == "direct"
+        ]
+        label = self.config.aether_session_label
+        if label:
+            exact = [session for session in candidates if session.get("key") == label]
+            if exact:
+                return max(exact, key=lambda s: s.get("updatedAt", 0)).get("sessionId")
+            partial = [
+                session for session in candidates if label in (session.get("key") or "")
+            ]
+            if partial:
+                return max(partial, key=lambda s: s.get("updatedAt", 0)).get("sessionId")
+        if candidates:
+            return max(candidates, key=lambda s: s.get("updatedAt", 0)).get("sessionId")
+        return None
 
     def _format_message(self, packet: dict[str, Any]) -> str:
         payload = json.dumps(packet, ensure_ascii=False, indent=2)
@@ -243,16 +282,6 @@ class RelayHandler(BaseHTTPRequestHandler):
             )
             return
 
-        self.server.ledger.record(
-            delivery_id,
-            sender_id=relay_sender_id,
-            repository_full_name=packet["repository_full_name"],
-            issue_number=int(packet["issue_number"]),
-            classification=packet["classification"],
-            status="accepted",
-            session_label=self.server.config.aether_session_label,
-            session_id=self.server.config.aether_session_id or None,
-        )
         self._respond(
             HTTPStatus.ACCEPTED,
             {
@@ -264,7 +293,7 @@ class RelayHandler(BaseHTTPRequestHandler):
                 "session_label": self.server.config.aether_session_label,
             },
         )
-        self.server.inject_async(delivery_id, relay_sender_id, packet)
+        self.server.accept_async(delivery_id, relay_sender_id, packet)
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
         return
@@ -304,13 +333,27 @@ class RelayIngressServer(ThreadingHTTPServer):
         self.injector = AetherSessionInjector(config)
         super().__init__((config.host, config.port), RelayHandler)
 
-    def inject_async(self, delivery_id: str, relay_sender_id: str, packet: dict[str, Any]) -> None:
+    def accept_async(self, delivery_id: str, relay_sender_id: str, packet: dict[str, Any]) -> None:
         worker = threading.Thread(
-            target=self._inject_and_record,
+            target=self._record_and_inject,
             args=(delivery_id, relay_sender_id, packet),
             daemon=True,
         )
         worker.start()
+
+    def _record_and_inject(self, delivery_id: str, relay_sender_id: str, packet: dict[str, Any]) -> None:
+        session_id = self.injector.resolve_session_id()
+        self.ledger.record(
+            delivery_id,
+            sender_id=relay_sender_id,
+            repository_full_name=packet["repository_full_name"],
+            issue_number=int(packet["issue_number"]),
+            classification=packet["classification"],
+            status="accepted",
+            session_label=self.config.aether_session_label,
+            session_id=session_id or None,
+        )
+        self._inject_and_record(delivery_id, relay_sender_id, packet)
 
     def _inject_and_record(self, delivery_id: str, relay_sender_id: str, packet: dict[str, Any]) -> None:
         injection = self.injector.inject(packet)
@@ -323,7 +366,7 @@ class RelayIngressServer(ThreadingHTTPServer):
                 classification=packet["classification"],
                 status="failed",
                 session_label=self.config.aether_session_label,
-                session_id=self.config.aether_session_id or None,
+                session_id=self.injector.resolve_session_id() or None,
                 note=str(injection.get("error") or "session_injection_failed"),
             )
             return
