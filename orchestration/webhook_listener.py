@@ -12,6 +12,7 @@ from urllib.error import HTTPError, URLError
 
 from orchestration.config import ListenerConfig
 from orchestration.reporting import report_result
+from orchestration.relay_client import RelayClient
 from orchestration.router import Router
 from orchestration.session_client import SessionClient
 from orchestration.task_packet import build_session_event_packet
@@ -98,30 +99,41 @@ class WebhookHandler(BaseHTTPRequestHandler):
         LOGGER.info("Router result: %s", router_result)
         runner_result = router_result.get("runner_result")
         reporting_result = None
-        direct_wake_result = None
+        delivery_result = None
         discord_result = None
         if router_result.get("accepted") and runner_result:
             reporting_result = report_result(repo_name, normalized_event["issue_number"], runner_result)
         if router_result.get("accepted") and router_result.get("requires_aether_wake"):
             packet = build_session_event_packet(normalized_event, router_result)
-            direct_wake_result = self.server.session_client.send_event(packet)
-            if direct_wake_result.ok:
+            if self.server.config.enable_aether_relay:
+                delivery_result = self.server.relay_client.send_event(packet)
+            else:
+                delivery_result = self.server.session_client.send_event(packet)
+
+            if delivery_result.ok:
                 self.server.router.ledger.mark_session_send(
                     normalized_event["delivery_id"],
                     "sent",
-                    session_label=direct_wake_result.session_label,
-                    session_key=direct_wake_result.session_id,
+                    session_label=delivery_result.session_label,
+                    session_key=delivery_result.session_id,
+                )
+                ack_status = "acked" if delivery_result.status in {"acked", "duplicate"} else delivery_result.status
+                self.server.router.ledger.mark_ack_status(
+                    normalized_event["delivery_id"],
+                    ack_status,
+                    action=getattr(delivery_result, "action", None),
+                    message=None if delivery_result.status == "acked" else delivery_result.status,
                 )
             else:
                 self.server.router.ledger.mark_session_send(
                     normalized_event["delivery_id"],
-                    direct_wake_result.status,
-                    session_label=direct_wake_result.session_label,
-                    session_key=direct_wake_result.session_id,
-                    error=direct_wake_result.error,
+                    delivery_result.status,
+                    session_label=delivery_result.session_label,
+                    session_key=delivery_result.session_id,
+                    error=delivery_result.error,
                 )
         if router_result.get("accepted"):
-            discord_result = _send_discord_heartbeat(self.server.config, normalized_event, router_result, direct_wake_result)
+            discord_result = _send_discord_heartbeat(self.server.config, normalized_event, router_result, delivery_result)
             if discord_result:
                 self.server.router.ledger.mark_discord_notice(
                     normalized_event["delivery_id"],
@@ -134,7 +146,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 "status": "accepted",
                 "router": router_result,
                 "reporting": reporting_result,
-                "direct_wake": None if direct_wake_result is None else direct_wake_result.__dict__,
+                "direct_wake": None if delivery_result is None else delivery_result.__dict__,
                 "discord": discord_result,
             },
         )
@@ -149,6 +161,7 @@ class WebhookServer(ThreadingHTTPServer):
         self.config = config
         self.router = router
         self.session_client = SessionClient(config)
+        self.relay_client = RelayClient(config)
 
 
 def _send_discord_heartbeat(

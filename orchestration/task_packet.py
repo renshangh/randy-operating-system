@@ -37,4 +37,5 @@ def build_session_event_packet(normalized_event: dict[str, Any], router_result: 
         "summary": router_result.get("summary") or "",
         "comment_body": normalized_event.get("comment_body") or "",
         "notice_only": bool(router_result.get("notice_only")),
+        "sent_at": normalized_event.get("received_at") or "",
     }
