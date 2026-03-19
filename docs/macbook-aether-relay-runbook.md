@@ -27,7 +27,16 @@ cd ~/.openclaw/workspace/randy-operating-system
 python3 scripts/update_aether_session_registry.py aether-ops-inbox <new-session-id>
 ```
 
-The relay now uses that session id when the repo's `aether_relay_ingress` process starts, avoiding the need to hardcode `AETHER_SESSION_ID` in the LaunchAgent.
+Alternatively, you can trigger the `Restart Aether Relay` workflow (`workflows/restart-aether-relay.yml`) via GitHub Actions. The workflow takes a `session_id` input, runs the same registry update logic, and can be reused by automation if you have a remote runner that maintains the same workspace layout.
+
+Once the registry is updated, restart the relay using the helper script:
+
+```bash
+cd ~/.openclaw/workspace/randy-operating-system
+scripts/restart_aether_relay.sh <new-session-id>
+```
+
+The script updates the registry keyed to `aether-ops-inbox`, reloads the LaunchAgent, restarts the ingress service, and reuses the `start_aether_relay_ingress.sh` helper so you only have to provide the new session id.
 
 ## Files
 - launcher script: `scripts/start_aether_relay_ingress.sh`

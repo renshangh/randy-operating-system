@@ -1,0 +1,28 @@
+name: "Restart Aether Relay"
+
+on:
+  workflow_dispatch:
+    inputs:
+      session_id:
+        description: "Aether inbox session ID to register"
+        required: true
+      registry_path:
+        description: "Alternate registry file path (defaults to ./aether_session_registry.json)"
+        default: "./aether_session_registry.json"
+
+jobs:
+  update_registry:
+    name: Update session registry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Update registry entry
+        run: |
+          python3 scripts/update_aether_session_registry.py aether-ops-inbox ${{ inputs.session_id }} --registry "${{ inputs.registry_path }}"
+      - name: Show registry contents
+        run: cat ${{ inputs.registry_path }}
