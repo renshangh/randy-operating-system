@@ -16,6 +16,7 @@ class ListenerConfig:
     enable_aether_relay: bool = False
     aether_session_label: str = "aether-ops-inbox"
     aether_session_id: str = ""
+    aether_session_registry: str = "~/.openclaw/workspace/aether_session_registry.json"
     aether_relay_url: str = ""
     aether_relay_secret: str = ""
     aether_relay_sender_id: str = "mac-mini"
@@ -40,6 +41,7 @@ class ListenerConfig:
         enable_aether_relay = os.environ.get("ENABLE_AETHER_RELAY", "0").lower() in {"1", "true", "yes", "on"}
         aether_session_label = os.environ.get("AETHER_SESSION_LABEL", "aether-ops-inbox")
         aether_session_id = os.environ.get("AETHER_SESSION_ID", "")
+        aether_session_registry = os.environ.get("AETHER_SESSION_REGISTRY", "~/.openclaw/workspace/aether_session_registry.json")
         aether_relay_url = os.environ.get("AETHER_RELAY_URL", "")
         aether_relay_secret = os.environ.get("AETHER_RELAY_SECRET", "")
         aether_relay_sender_id = os.environ.get("AETHER_RELAY_SENDER_ID", "mac-mini")
@@ -58,6 +60,7 @@ class ListenerConfig:
             enable_aether_relay=enable_aether_relay,
             aether_session_label=aether_session_label,
             aether_session_id=aether_session_id,
+            aether_session_registry=aether_session_registry,
             aether_relay_url=aether_relay_url,
             aether_relay_secret=aether_relay_secret,
             aether_relay_sender_id=aether_relay_sender_id,

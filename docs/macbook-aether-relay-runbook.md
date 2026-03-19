@@ -15,9 +15,19 @@ This runbook covers only the MacBook ingress side for issue #187.
 - Mac Mini relay path still disabled until explicit end-to-end test window
 
 ## Current operator note
-On this MacBook, the session registry file `~/.openclaw/agents/main/sessions/sessions.json` may be present but empty even when live session transcript files exist. In that case, label-only auto-discovery can fail with `missing_aether_session_id`.
+On this MacBook, the session registry file `~/.openclaw/agents/main/sessions/sessions.json` may be present but still lack an entry that matches `aether-ops-inbox`. Auto-discovery fails with `missing_aether_session_id` when the label cannot be resolved automatically.
 
-The currently proven operational fallback is to set `AETHER_SESSION_ID` explicitly in the installed LaunchAgent until a durable inbox-session discovery path is standardized.
+The current durable fallback is the **session registry file** at `~/.openclaw/workspace/aether_session_registry.json`. It maps `aether-ops-inbox` to the known working session (`6611226a-5a2a-4d08-af69-3c361259276c` at the time of the lesson learn). Instead of pinning `AETHER_SESSION_ID` in the plist, keep `AETHER_SESSION_ID` empty so the relay naturally looks up the registry and remains portable across machines/rotations.
+
+### Updating the registry
+When you have a new inbox session (for example, after creating a fresh session with `openclaw agent --session-id <new-id> --message "init aether inbox"`), update the registry with:
+
+```bash
+cd ~/.openclaw/workspace/randy-operating-system
+python3 scripts/update_aether_session_registry.py aether-ops-inbox <new-session-id>
+```
+
+The relay now uses that session id when the repo's `aether_relay_ingress` process starts, avoiding the need to hardcode `AETHER_SESSION_ID` in the LaunchAgent.
 
 ## Files
 - launcher script: `scripts/start_aether_relay_ingress.sh`

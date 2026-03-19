@@ -42,6 +42,7 @@ class RelayIngressConfig:
     aether_session_label: str = "aether-ops-inbox"
     aether_session_id: str = ""
     session_store_path: str = ""
+    session_registry_path: str = "~/.openclaw/workspace/aether_session_registry.json"
     openclaw_bin: str = ""
     inject_timeout_seconds: int = 30
     inject_retry_attempts: int = 4
@@ -58,6 +59,7 @@ class RelayIngressConfig:
             aether_agent_id=os.environ.get("AETHER_AGENT_ID", "main"),
             aether_session_label=os.environ.get("AETHER_SESSION_LABEL", "aether-ops-inbox"),
             aether_session_id=os.environ.get("AETHER_SESSION_ID", ""),
+            session_registry_path=os.environ.get("AETHER_SESSION_REGISTRY", "~/.openclaw/workspace/aether_session_registry.json"),
             session_store_path=os.environ.get("AETHER_SESSION_STORE", ""),
             openclaw_bin=os.environ.get("OPENCLAW_BIN", shutil.which("openclaw") or "openclaw"),
             inject_timeout_seconds=int(os.environ.get("AETHER_RELAY_TIMEOUT_SECONDS", "30")),
@@ -213,7 +215,7 @@ class AetherSessionInjector:
         try:
             data = json.loads(Path(session_store_path).read_text())
         except Exception:
-            return None
+            return self._resolve_from_registry(self.config.aether_session_label)
         sessions = data.get("sessions", [])
         candidates = [
             session
@@ -233,6 +235,21 @@ class AetherSessionInjector:
                 return max(partial, key=lambda s: s.get("updatedAt", 0)).get("sessionId")
         if candidates:
             return max(candidates, key=lambda s: s.get("updatedAt", 0)).get("sessionId")
+        return self._resolve_from_registry(label)
+
+    def _resolve_from_registry(self, label: str | None) -> str | None:
+        if not label:
+            return None
+        registry_path = Path(os.path.expanduser(self.config.session_registry_path))
+        try:
+            data = json.loads(registry_path.read_text())
+        except Exception:
+            return None
+        entry = data.get(label)
+        if isinstance(entry, dict):
+            return entry.get("sessionId")
+        if isinstance(entry, str):
+            return entry
         return None
 
     def _is_retryable_error(self, error: str) -> bool:
