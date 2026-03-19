@@ -7,10 +7,17 @@ Run the MacBook-side Aether relay ingress as a persistent LaunchAgent-backed ser
 This runbook covers only the MacBook ingress side for issue #187.
 
 ## Preconditions
-- repo available at `~/repo/randy-operating-system`
-- real Aether session id known
+- repo available at `~/.openclaw/workspace/randy-operating-system`
 - relay secret chosen
+- either:
+  - a real Aether session id is known, or
+  - the local OpenClaw session registry can resolve the desired inbox session
 - Mac Mini relay path still disabled until explicit end-to-end test window
+
+## Current operator note
+On this MacBook, the session registry file `~/.openclaw/agents/main/sessions/sessions.json` may be present but empty even when live session transcript files exist. In that case, label-only auto-discovery can fail with `missing_aether_session_id`.
+
+The currently proven operational fallback is to set `AETHER_SESSION_ID` explicitly in the installed LaunchAgent until a durable inbox-session discovery path is standardized.
 
 ## Files
 - launcher script: `scripts/start_aether_relay_ingress.sh`
@@ -21,21 +28,25 @@ This runbook covers only the MacBook ingress side for issue #187.
 
 ## Required environment values
 - `AETHER_RELAY_SECRET`
-- `AETHER_SESSION_ID`
+- one of:
+  - `AETHER_SESSION_ID`, or
+  - a working session-registry path that resolves `AETHER_SESSION_LABEL`
 
 ## Recommended defaults
 - `AETHER_RELAY_HOST=0.0.0.0` for cross-host relay over the tailnet (do not expose publicly)
 - `AETHER_RELAY_PORT=8791`
 - `AETHER_RELAY_SENDER_ID=mac-mini`
 - `AETHER_SESSION_LABEL=aether-ops-inbox`
+- `OPENCLAW_BIN=/Users/renshan/.nvm/versions/node/v23.8.0/bin/openclaw`
 
 ## Install steps
 1. Copy the template plist into `~/Library/LaunchAgents/ai.openclaw.aether-relay-ingress.plist`.
-2. Replace both `REPLACE_ME` values:
+2. Replace `REPLACE_ME` for:
    - `AETHER_RELAY_SECRET`
-   - `AETHER_SESSION_ID`
-3. Confirm `REPO_DIR` and script path match the local checkout.
-4. Load the LaunchAgent:
+3. Confirm `REPO_DIR`, `AETHER_RELAY_DEDUPE_DB`, and script path match the local checkout under `~/.openclaw/workspace/randy-operating-system`.
+4. If the session registry does not resolve a live inbox session, add an explicit:
+   - `AETHER_SESSION_ID=<known-live-main-session-id>`
+5. Load the LaunchAgent:
    ```bash
    launchctl unload ~/Library/LaunchAgents/ai.openclaw.aether-relay-ingress.plist 2>/dev/null || true
    launchctl load ~/Library/LaunchAgents/ai.openclaw.aether-relay-ingress.plist
@@ -61,6 +72,14 @@ Starting Aether relay ingress host=127.0.0.1 port=8791 session_label=aether-ops-
 ### RPC dry check
 A request with bad auth should return `401 unauthorized`.
 A request with valid auth but no valid session injection should fail safely and leave a ledger row.
+
+### Proven-good validation state (2026-03-19)
+After fixing the LaunchAgent paths and binding a known live session id, localhost probes progressed:
+- `accepted` -> `acked`
+
+Ledger probes that verified this path:
+- `localhost-fix-probe-010`
+- `localhost-fix-probe-011`
 
 ## Rollback
 Disable the LaunchAgent:

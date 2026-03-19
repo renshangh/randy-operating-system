@@ -25,7 +25,7 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `ENABLE_DIRECT_SESSION_WAKE` — enable direct OpenClaw wake path for accepted completion/command events
 - `ENABLE_AETHER_RELAY` — enable Mac Mini -> MacBook relay delivery path for accepted completion/command events
 - `AETHER_SESSION_LABEL` — logical target label for ledger/audit, default `aether-ops-inbox`
-- `AETHER_SESSION_ID` — concrete OpenClaw session id used by the local direct-wake transport and MacBook ingress injector
+- `AETHER_SESSION_ID` — concrete OpenClaw session id used by the local direct-wake transport and MacBook ingress injector; recommended fallback when session-label auto-discovery is empty or unreliable
 - `AETHER_RELAY_URL` — MacBook relay ingress URL used by the Mac Mini relay client
 - `AETHER_RELAY_SECRET` — shared secret used by the Mac Mini relay client
 - `AETHER_RELAY_SENDER_ID` — sender id header used by the Mac Mini relay client, default `mac-mini`
@@ -39,6 +39,8 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `AETHER_RELAY_SENDER_ID` — expected relay sender id, default `mac-mini`
 - `AETHER_RELAY_DEDUPE_DB` — local SQLite path for relay dedupe/ack state, default `orchestration/aether_relay_ingress.sqlite`
 - `AETHER_RELAY_TIMEOUT_SECONDS` — timeout for injecting into Aether from the MacBook ingress, default `30`
+- `AETHER_RELAY_RETRY_ATTEMPTS` — retry count for relay injection when session writes time out / lock, default `4`
+- `AETHER_RELAY_RETRY_DELAY_SECONDS` — base retry delay for relay injection backoff, default `2`
 
 ## Start listener
 ```bash
@@ -56,7 +58,9 @@ python -m orchestration.webhook_listener
 - Phase 1 direct wake is now wired for accepted completion comments and operator commands (`/retry`, `/status`, `/hold`) using `openclaw agent --session-id ...`.
 - The new `aether_relay_ingress.py` is the MacBook-side ingress skeleton for Phase 1 of issue #187; it accepts only narrow allowed classifications, dedupes on `delivery_id`, and returns a compact JSON ack.
 - The new `relay_client.py` is the Mac Mini-side RPC sender for Phase 2 of issue #187; when `ENABLE_AETHER_RELAY=1`, the listener uses it for accepted completion/command events instead of the local direct-wake path.
-- `scripts/start_aether_relay_ingress.sh` plus `deploy/launchagents/ai.openclaw.aether-relay-ingress.plist` provide the first persistent-service scaffold for running the MacBook ingress safely behind explicit env values.
+- `scripts/start_aether_relay_ingress.sh` plus `deploy/launchagents/ai.openclaw.aether-relay-ingress.plist` provide the persistent-service scaffold for running the MacBook ingress behind explicit env values.
+- The MacBook ingress now retries retryable injection failures (for example, session-file lock timeouts) instead of failing immediately on the first attempt.
+- Background poller scripts should set an explicit PATH instead of relying on cron/launchd defaults; `issue_50_progress_bus_poll.sh` was hardened after repeated `gh: command not found` failures in background execution.
 - Discord heartbeat remains a human-facing mirror; the direct wake path is the machine trigger when enabled.
 - `run_ledger.sqlite` now records routing plus direct wake / Discord mirror state for each accepted delivery.
 - The Ember adapter boundary exists and writes local artifacts, but live runtime invocation is not yet wired.

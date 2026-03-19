@@ -162,6 +162,14 @@ For the MVP, choose **Option A** if feasible. It best matches the intended opera
 - Mac Mini = edge ingress / relay
 - MacBook = real Aether
 
+## Operational note from live validation (2026-03-19)
+The transport path is now validated end-to-end on the MacBook ingress side, but one runtime caveat matters:
+
+- session-label auto-discovery may not be sufficient by itself if `~/.openclaw/agents/main/sessions/sessions.json` is empty or stale
+- explicit `AETHER_SESSION_ID` binding in the installed MacBook LaunchAgent is currently the most reliable operational fallback
+
+This does not change the architecture recommendation. It is an implementation/runtime detail that should be cleaned up later by establishing a durable inbox session and a trustworthy discovery source.
+
 ---
 
 # 6. Relay Packet Contract
