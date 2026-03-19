@@ -22,10 +22,11 @@
 
 ## 4. Action items (next cleanup pass)
 1. **Durable inbox session:** create/mark a persistent Aether inbox session (e.g., `agent:main:discord:...` or `aether-ops-inbox`) and update the relay injector to find it through the actual transcript files rather than `sessions.json`. Document steps in this doc once done.
-2. **Document missing session symptoms:** add a short note (maybe into `docs/macbook-aether-relay-runbook.md`) describing the `missing_aether_session_id` error and how to recover by either pinning a session ID or restarting the session registry.
-3. **Confirm `openclaw` path in plist:** ensure the installed LaunchAgent always sets `OPENCLAW_BIN`/`PATH`; track this in the runbook if new systems are provisioned.
-4. **Optionally re-enable Live Board cron** when the board is needed again; otherwise keep it idle.
-5. **Reference material:** link to runbook commits `5386164` (code fix) and `6e5480b` (docs cleanup) plus this lesson doc in the main issue (#176 or the parent). 
+2. **Session registry:** maintain `~/.openclaw/workspace/aether_session_registry.json` using `scripts/update_aether_session_registry.py`. The relay now looks up `aether-ops-inbox` in this file before falling back to `AETHER_SESSION_ID`, so keep the mapping current whenever you rotate sessions.
+3. **Document missing session symptoms:** add a short note (maybe into `docs/macbook-aether-relay-runbook.md`) describing the `missing_aether_session_id` error and how to recover by either pinning a session ID or restarting the session registry.
+4. **Confirm `openclaw` path in plist:** ensure the installed LaunchAgent always sets `OPENCLAW_BIN`/`PATH`; track this in the runbook if new systems are provisioned.
+5. **Optionally re-enable Live Board cron** when the board is needed again; otherwise keep it idle.
+6. **Reference material:** link to runbook commits `5386164` (code fix) and `6e5480b` (docs cleanup) plus this lesson doc in the main issue (#176 or the parent). 
 
 ## 5. SOP Checklist
 1. Verify `issue_50_progress_bus_poll.sh` still runs under strict PATH and logs failure with `missing_gh`/`missing_jq` tags when dependencies are absent.
