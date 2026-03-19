@@ -5,6 +5,7 @@ import os
 import shutil
 import sqlite3
 import subprocess
+import threading
 from dataclasses import dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -252,51 +253,18 @@ class RelayHandler(BaseHTTPRequestHandler):
             session_label=self.server.config.aether_session_label,
             session_id=self.server.config.aether_session_id or None,
         )
-
-        injection = self.server.injector.inject(packet)
-        if not injection.get("ok"):
-            self.server.ledger.record(
-                delivery_id,
-                sender_id=relay_sender_id,
-                repository_full_name=packet["repository_full_name"],
-                issue_number=int(packet["issue_number"]),
-                classification=packet["classification"],
-                status="failed",
-                session_label=self.server.config.aether_session_label,
-                session_id=self.server.config.aether_session_id or None,
-                note=str(injection.get("error") or "session_injection_failed"),
-            )
-            self._respond(
-                HTTPStatus.BAD_GATEWAY,
-                {
-                    "ok": False,
-                    "delivery_id": delivery_id,
-                    "error": "session_injection_failed",
-                },
-            )
-            return
-
-        self.server.ledger.record(
-            delivery_id,
-            sender_id=relay_sender_id,
-            repository_full_name=packet["repository_full_name"],
-            issue_number=int(packet["issue_number"]),
-            classification=packet["classification"],
-            status="acked",
-            session_label=injection.get("session_label") or self.server.config.aether_session_label,
-            session_id=injection.get("session_id") or self.server.config.aether_session_id or None,
-        )
         self._respond(
-            HTTPStatus.OK,
+            HTTPStatus.ACCEPTED,
             {
                 "ok": True,
                 "delivery_id": delivery_id,
-                "status": "acked",
-                "action": "none",
+                "status": "accepted",
+                "action": "queued",
                 "target": "aether",
-                "session_label": injection.get("session_label") or self.server.config.aether_session_label,
+                "session_label": self.server.config.aether_session_label,
             },
         )
+        self.server.inject_async(delivery_id, relay_sender_id, packet)
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
         return
@@ -319,11 +287,14 @@ class RelayHandler(BaseHTTPRequestHandler):
 
     def _respond(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
         body = json.dumps(payload).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except BrokenPipeError:
+            return
 
 
 class RelayIngressServer(ThreadingHTTPServer):
@@ -332,6 +303,40 @@ class RelayIngressServer(ThreadingHTTPServer):
         self.ledger = RelayIngressLedger(config.dedupe_db_path)
         self.injector = AetherSessionInjector(config)
         super().__init__((config.host, config.port), RelayHandler)
+
+    def inject_async(self, delivery_id: str, relay_sender_id: str, packet: dict[str, Any]) -> None:
+        worker = threading.Thread(
+            target=self._inject_and_record,
+            args=(delivery_id, relay_sender_id, packet),
+            daemon=True,
+        )
+        worker.start()
+
+    def _inject_and_record(self, delivery_id: str, relay_sender_id: str, packet: dict[str, Any]) -> None:
+        injection = self.injector.inject(packet)
+        if not injection.get("ok"):
+            self.ledger.record(
+                delivery_id,
+                sender_id=relay_sender_id,
+                repository_full_name=packet["repository_full_name"],
+                issue_number=int(packet["issue_number"]),
+                classification=packet["classification"],
+                status="failed",
+                session_label=self.config.aether_session_label,
+                session_id=self.config.aether_session_id or None,
+                note=str(injection.get("error") or "session_injection_failed"),
+            )
+            return
+        self.ledger.record(
+            delivery_id,
+            sender_id=relay_sender_id,
+            repository_full_name=packet["repository_full_name"],
+            issue_number=int(packet["issue_number"]),
+            classification=packet["classification"],
+            status="acked",
+            session_label=injection.get("session_label") or self.config.aether_session_label,
+            session_id=injection.get("session_id") or self.config.aether_session_id or None,
+        )
 
 
 def main() -> None:
