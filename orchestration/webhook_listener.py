@@ -13,6 +13,8 @@ from urllib.error import HTTPError, URLError
 from orchestration.config import ListenerConfig
 from orchestration.reporting import report_result
 from orchestration.router import Router
+from orchestration.session_client import SessionClient
+from orchestration.task_packet import build_session_event_packet
 
 LOGGER = logging.getLogger("github_webhook_listener")
 SUPPORTED_EVENTS = {"issues", "issue_comment"}
@@ -96,17 +98,43 @@ class WebhookHandler(BaseHTTPRequestHandler):
         LOGGER.info("Router result: %s", router_result)
         runner_result = router_result.get("runner_result")
         reporting_result = None
+        direct_wake_result = None
         discord_result = None
         if router_result.get("accepted") and runner_result:
             reporting_result = report_result(repo_name, normalized_event["issue_number"], runner_result)
+        if router_result.get("accepted") and router_result.get("requires_aether_wake"):
+            packet = build_session_event_packet(normalized_event, router_result)
+            direct_wake_result = self.server.session_client.send_event(packet)
+            if direct_wake_result.ok:
+                self.server.router.ledger.mark_session_send(
+                    normalized_event["delivery_id"],
+                    "sent",
+                    session_label=direct_wake_result.session_label,
+                    session_key=direct_wake_result.session_id,
+                )
+            else:
+                self.server.router.ledger.mark_session_send(
+                    normalized_event["delivery_id"],
+                    direct_wake_result.status,
+                    session_label=direct_wake_result.session_label,
+                    session_key=direct_wake_result.session_id,
+                    error=direct_wake_result.error,
+                )
         if router_result.get("accepted"):
-            discord_result = _send_discord_heartbeat(self.server.config, normalized_event, router_result)
+            discord_result = _send_discord_heartbeat(self.server.config, normalized_event, router_result, direct_wake_result)
+            if discord_result:
+                self.server.router.ledger.mark_discord_notice(
+                    normalized_event["delivery_id"],
+                    "sent" if discord_result.get("sent") else "failed",
+                    error=discord_result.get("error"),
+                )
         self._json_response(
             HTTPStatus.ACCEPTED,
             {
                 "status": "accepted",
                 "router": router_result,
                 "reporting": reporting_result,
+                "direct_wake": None if direct_wake_result is None else direct_wake_result.__dict__,
                 "discord": discord_result,
             },
         )
@@ -120,19 +148,24 @@ class WebhookServer(ThreadingHTTPServer):
         super().__init__(server_address, WebhookHandler)
         self.config = config
         self.router = router
+        self.session_client = SessionClient(config)
 
 
 def _send_discord_heartbeat(
     config: ListenerConfig,
     normalized_event: dict[str, Any],
     router_result: dict[str, Any],
+    direct_wake_result: Any | None = None,
 ) -> dict[str, Any] | None:
     webhook_url = config.discord_heartbeat_webhook_url.strip()
     if not webhook_url:
         return {"sent": False, "reason": "webhook_not_configured"}
 
-    if not router_result.get("status", "").startswith("completion:"):
-        return {"sent": False, "reason": "not_completion_event"}
+    if not (
+        router_result.get("status", "").startswith("completion:")
+        or router_result.get("status", "").startswith("command:")
+    ):
+        return {"sent": False, "reason": "not_notice_event"}
 
     issue_number = normalized_event.get("issue_number")
     repo_name = normalized_event.get("repository_full_name")
@@ -143,11 +176,17 @@ def _send_discord_heartbeat(
     summary = router_result.get("summary") or "No summary provided."
     mention = f"<@{config.discord_aether_user_id}> " if config.discord_aether_user_id else ""
 
+    wake_line = ""
+    if direct_wake_result is not None:
+        wake_status = "sent" if getattr(direct_wake_result, "ok", False) else f"failed ({getattr(direct_wake_result, 'error', 'unknown_error')})"
+        wake_line = f"\nDirect wake: {wake_status}"
+
     content = (
         f"{mention}GitHub completion received: **{status}** from **{agent}**\n"
         f"Repo: `{repo_name}`\n"
         f"Issue: #{issue_number} — {issue_title}\n"
         f"Summary: {summary}"
+        f"{wake_line}"
     )
     if issue_url:
         content += f"\n{issue_url}"

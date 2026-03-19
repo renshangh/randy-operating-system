@@ -62,8 +62,12 @@ export ALLOWED_REPOS='renshangh/real-estate-assistant,renshangh/openclaw-remote-
 export LISTENER_HOST='127.0.0.1'
 export LISTENER_PORT='8787'
 # Optional Discord notice for completion comments
-# export DISCORD_HEARTBEAT_WEBHOOK_URL='https://discord.com/api/webhooks/...' 
+# export DISCORD_HEARTBEAT_WEBHOOK_URL='https://discord.com/api/webhooks/...'
 # export DISCORD_AETHER_USER_ID=''
+# Phase 1 direct wake (machine trigger)
+# export ENABLE_DIRECT_SESSION_WAKE='1'
+# export AETHER_SESSION_LABEL='aether-ops-inbox'
+# export AETHER_SESSION_ID='<existing-openclaw-session-id>'
 nohup python3 -m orchestration.webhook_listener >/tmp/ember_webhook_listener.log 2>&1 &
 ```
 
@@ -177,6 +181,8 @@ sed -n '1,260p' /tmp/ember_webhook_listener.log
 Expected examples:
 - `Accepted event ... event=issues action=labeled issue=157`
 - `Ignoring unsupported event ... event=ping`
+- `Router result: {'accepted': True, ...}`
+- if direct wake is enabled, either a successful direct wake result or a logged send failure reason
 
 ### C. Ember artifact validation
 Check recent Ember artifacts:

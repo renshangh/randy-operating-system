@@ -103,13 +103,30 @@ class Router:
         if run_count >= 3 and agent == "ember":
             return self._blocked(delivery_id, repo, issue_number, f"max_retries_exceeded:{agent}:{run_count}")
 
-        self.ledger.record(delivery_id, repo, issue_number, "running", run_id=run_id, note="dispatch_eligible")
+        self.ledger.record(
+            delivery_id,
+            repo,
+            issue_number,
+            "running",
+            event_type=normalized_event.get("event_type"),
+            event_action=normalized_event.get("action"),
+            classification="dispatch:ready",
+            target_agent=agent,
+            accepted=True,
+            run_id=run_id,
+            note="dispatch_eligible",
+        )
         runner_result = self.runners[agent].run(task_packet)
         self.ledger.record(
             delivery_id,
             repo,
             issue_number,
             runner_result.result_status,
+            event_type=normalized_event.get("event_type"),
+            event_action=normalized_event.get("action"),
+            classification=runner_result.result_status,
+            target_agent=agent,
+            accepted=True,
             run_id=run_id,
             note=runner_result.summary,
         )
@@ -149,29 +166,65 @@ class Router:
         if issue_state != "open":
             return self._ignore(delivery_id, repo, issue_number, "issue_not_open")
 
-        parsed = self._parse_completion_comment(comment_body)
-        if not parsed:
-            return self._ignore(delivery_id, repo, issue_number, "non_completion_comment")
+        parsed_completion = self._parse_completion_comment(comment_body)
+        if parsed_completion:
+            status, agent, summary = parsed_completion
+            decision = f"completion:{status}"
+            self.ledger.record(
+                delivery_id,
+                repo,
+                issue_number,
+                decision,
+                event_type=normalized_event.get("event_type"),
+                event_action=normalized_event.get("action"),
+                classification=decision,
+                target_agent=agent,
+                accepted=True,
+                note=f"agent={agent}; summary={summary}",
+                ack_status="pending",
+            )
+            return {
+                "accepted": True,
+                "status": decision,
+                "classification": decision,
+                "agent": agent,
+                "repository_full_name": repo,
+                "issue_number": issue_number,
+                "summary": summary,
+                "notice_only": True,
+                "requires_aether_wake": True,
+            }
 
-        status, agent, summary = parsed
-        decision = f"completion:{status}"
-        self.ledger.record(
-            delivery_id,
-            repo,
-            issue_number,
-            decision,
-            run_id=None,
-            note=f"agent={agent}; summary={summary}",
-        )
-        return {
-            "accepted": True,
-            "status": decision,
-            "agent": agent,
-            "repository_full_name": repo,
-            "issue_number": issue_number,
-            "summary": summary,
-            "notice_only": True,
-        }
+        parsed_command = self._parse_operator_command(comment_body)
+        if parsed_command:
+            command = parsed_command
+            decision = f"command:{command}"
+            self.ledger.record(
+                delivery_id,
+                repo,
+                issue_number,
+                decision,
+                event_type=normalized_event.get("event_type"),
+                event_action=normalized_event.get("action"),
+                classification=decision,
+                target_agent="aether",
+                accepted=True,
+                note=f"operator_command={command}",
+                ack_status="pending",
+            )
+            return {
+                "accepted": True,
+                "status": decision,
+                "classification": decision,
+                "agent": "aether",
+                "repository_full_name": repo,
+                "issue_number": issue_number,
+                "summary": f"operator command received ({command})",
+                "notice_only": True,
+                "requires_aether_wake": True,
+            }
+
+        return self._ignore(delivery_id, repo, issue_number, "non_actionable_comment")
 
     def _parse_completion_comment(self, comment_body: str) -> tuple[str, str, str] | None:
         status_match = re.search(r"^Status:\s*(done|blocked|failed)\b", comment_body, re.IGNORECASE | re.MULTILINE)
@@ -191,6 +244,16 @@ class Router:
             break
         summary = summary or f"completion comment received ({status})"
         return status, agent, summary
+
+    def _parse_operator_command(self, comment_body: str) -> str | None:
+        stripped = comment_body.strip().lower()
+        if stripped.startswith("/retry"):
+            return "retry"
+        if stripped.startswith("/status"):
+            return "status"
+        if stripped.startswith("/hold"):
+            return "hold"
+        return None
 
     def _ignore(self, delivery_id: str, repo: str, issue_number: int, note: str) -> dict[str, Any]:
         self.ledger.record(delivery_id, repo, issue_number, "ignored", note=note)
