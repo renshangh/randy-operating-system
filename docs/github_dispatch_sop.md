@@ -30,6 +30,12 @@ Use:
 
 Without `dispatch:ready`, the specialist may not see or pick up the issue.
 
+### Review/return label
+Use:
+- `status:done`
+
+`status:done` means the specialist believes the work is complete and the issue is ready for Aether review.
+
 ## Standard GitHub Task Packet
 When dispatching an issue, the task packet on GitHub should explicitly include:
 
@@ -106,8 +112,46 @@ The QA comment should explicitly state:
 ### Step 7 — Send short QA notice in Discord
 Send only a brief heads-up in the QA lane, pointing back to the GitHub issue.
 
+## Label-State Loop
+This is the canonical closed-loop dispatch pattern.
+
+### Aether -> Specialist
+When Aether dispatches an issue, apply:
+- `agent:<agentname>`
+- `dispatch:ready`
+
+This means the issue is waiting on specialist action.
+
+### Specialist -> Aether
+When the specialist believes the work is complete, they should:
+- remove `dispatch:ready`
+- add `status:done`
+- post a substantive GitHub comment with the actual result/update
+
+This means the issue is now waiting on Aether review.
+
+### Aether review outcome
+If Aether accepts the work:
+- verify the output
+- relay/close/update as needed
+
+If Aether wants rework:
+- remove `status:done`
+- restore `dispatch:ready`
+- keep `agent:<agentname>` unless ownership changes
+- post a GitHub comment explaining what must be revised
+
+Then the issue loops back to the specialist.
+
+### State rule
+`dispatch:ready` and `status:done` should not both be present at the same time.
+
+### Meaning of the state labels
+- `dispatch:ready` = waiting on specialist
+- `status:done` = waiting on Aether review
+
 ## Review Gate
-Aether reviews only after the specialist or QA specialist has posted the required output on GitHub.
+Aether reviews only after the specialist or QA specialist has posted the required output on GitHub and the issue has been returned in the review state.
 
 Then Aether decides:
 - accept
