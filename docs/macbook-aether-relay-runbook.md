@@ -1,7 +1,9 @@
 # MacBook Aether Relay Runbook
 
+> Deprecated / historical runbook: do not use this as the active operating path. Keep only as reference while the relay approach is retired in favor of GitHub-triggered wake-up plus Discord execution follow-through.
+
 ## Purpose
-Run the MacBook-side Aether relay ingress as a persistent LaunchAgent-backed service.
+Historical runbook for running the MacBook-side Aether relay ingress as a persistent LaunchAgent-backed service.
 
 ## Scope
 This runbook covers only the MacBook ingress side for issue #187.

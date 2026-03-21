@@ -12,7 +12,6 @@ from urllib.error import HTTPError, URLError
 
 from orchestration.config import ListenerConfig
 from orchestration.reporting import report_result
-from orchestration.relay_client import RelayClient
 from orchestration.router import Router
 from orchestration.session_client import SessionClient
 from orchestration.task_packet import build_session_event_packet
@@ -105,10 +104,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
             reporting_result = report_result(repo_name, normalized_event["issue_number"], runner_result)
         if router_result.get("accepted") and router_result.get("requires_aether_wake"):
             packet = build_session_event_packet(normalized_event, router_result)
-            if self.server.config.enable_aether_relay:
-                delivery_result = self.server.relay_client.send_event(packet)
-            else:
-                delivery_result = self.server.session_client.send_event(packet)
+            delivery_result = self.server.session_client.send_event(packet)
 
             if delivery_result.ok:
                 self.server.router.ledger.mark_session_send(
@@ -161,7 +157,6 @@ class WebhookServer(ThreadingHTTPServer):
         self.config = config
         self.router = router
         self.session_client = SessionClient(config)
-        self.relay_client = RelayClient(config)
 
 
 def _send_discord_heartbeat(

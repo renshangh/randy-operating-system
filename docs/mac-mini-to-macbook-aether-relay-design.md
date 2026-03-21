@@ -1,7 +1,9 @@
 # Mac Mini → MacBook Aether Relay Design
 
+> Deprecated / historical design note: this relay approach is no longer the active direction. Keep for reference only while we move toward a GitHub-webhook-driven wake-up path plus Discord as the execution/clarification layer.
+
 ## Status
-Draft design for the corrected production architecture where the Mac Mini receives GitHub webhooks and relays actionable events to the real Aether runtime on the MacBook Pro.
+Historical draft for the corrected production architecture where the Mac Mini receives GitHub webhooks and relays actionable events to the real Aether runtime on the MacBook Pro.
 
 ## Correction from prior direct-wake prototype
 Aether is **MacBook-resident**. The Mac Mini is **not** the production home of Aether and must not host or impersonate Aether’s canonical runtime.
