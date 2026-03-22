@@ -17,55 +17,78 @@ SESSIONS_DIR = Path.home() / ".openclaw/agents/amy/sessions"
 SESSIONS_INDEX_PATH = SESSIONS_DIR / "sessions.json"
 
 
-def _extract_session_id_from_sessions_index(payload: Any) -> str | None:
-    candidates: list[dict[str, Any]] = []
+def _extract_session_candidates(payload: Any) -> list[tuple[str, dict[str, Any]]]:
+    candidates: list[tuple[str, dict[str, Any]]] = []
 
     if isinstance(payload, dict):
+        for key, value in payload.items():
+            if isinstance(value, dict):
+                candidates.append((str(key), value))
         for key in ("sessions", "items", "data"):
             value = payload.get(key)
             if isinstance(value, list):
-                candidates.extend(item for item in value if isinstance(item, dict))
-        if all(not isinstance(v, list) for v in payload.values()):
-            candidates.append(payload)
+                for item in value:
+                    if isinstance(item, dict):
+                        candidates.append((str(item.get("sessionKey") or item.get("key") or ""), item))
     elif isinstance(payload, list):
-        candidates.extend(item for item in payload if isinstance(item, dict))
+        for item in payload:
+            if isinstance(item, dict):
+                candidates.append((str(item.get("sessionKey") or item.get("key") or ""), item))
 
-    def score(item: dict[str, Any]) -> tuple[int, str]:
-        session_id = str(item.get("id") or item.get("sessionId") or item.get("session_id") or "")
-        timestamp = str(
-            item.get("updatedAt")
-            or item.get("updated_at")
-            or item.get("lastActivityAt")
-            or item.get("last_activity_at")
-            or item.get("createdAt")
-            or item.get("created_at")
-            or ""
-        )
-        active = item.get("active") is True or str(item.get("status") or "").lower() in {"active", "running", "open"}
-        return (1 if active else 0, timestamp + session_id)
+    return candidates
 
-    best_session_id: str | None = None
-    best_score: tuple[int, str] | None = None
-    for item in candidates:
-        session_id = str(item.get("id") or item.get("sessionId") or item.get("session_id") or "").strip()
-        if not session_id:
+
+def _score_session_candidate(session_key: str, item: dict[str, Any]) -> tuple[int, str]:
+    timestamp = str(
+        item.get("updatedAt")
+        or item.get("updated_at")
+        or item.get("lastActivityAt")
+        or item.get("last_activity_at")
+        or item.get("createdAt")
+        or item.get("created_at")
+        or ""
+    )
+    active = item.get("active") is True or str(item.get("status") or "").lower() in {"active", "running", "open"}
+    return (1 if active else 0, f"{timestamp}-{session_key}")
+
+
+def _resolve_session_file_from_index(payload: Any) -> Path | None:
+    candidates = _extract_session_candidates(payload)
+    if not candidates:
+        return None
+
+    preferred: list[tuple[int, str, Path]] = []
+    fallback: list[tuple[int, str, Path]] = []
+
+    for session_key, item in candidates:
+        session_file = str(item.get("sessionFile") or item.get("session_file") or "").strip()
+        session_id = str(item.get("sessionId") or item.get("session_id") or item.get("id") or "").strip()
+        if session_file:
+            path = Path(session_file).expanduser()
+        elif session_id:
+            path = SESSIONS_DIR / f"{session_id}.jsonl"
+        else:
             continue
-        item_score = score(item)
-        if best_score is None or item_score > best_score:
-            best_score = item_score
-            best_session_id = session_id
-    return best_session_id
+        if not path.exists():
+            continue
+        score = _score_session_candidate(session_key, item)
+        target = preferred if session_key == AMY_SESSION_KEY else fallback
+        target.append((*score, path))
+
+    if preferred:
+        return max(preferred, key=lambda item: item[:2])[2]
+    if fallback:
+        return max(fallback, key=lambda item: item[:2])[2]
+    return None
 
 
 def resolve_current_amy_transcript() -> Path:
     if SESSIONS_INDEX_PATH.exists():
         try:
             payload = json.loads(SESSIONS_INDEX_PATH.read_text(encoding="utf-8"))
-            session_id = _extract_session_id_from_sessions_index(payload)
-            if session_id:
-                candidate = SESSIONS_DIR / f"{session_id}.jsonl"
-                if candidate.exists():
-                    return candidate
+            candidate = _resolve_session_file_from_index(payload)
+            if candidate is not None:
+                return candidate
         except Exception:
             pass
 
