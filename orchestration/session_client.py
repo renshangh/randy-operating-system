@@ -111,10 +111,20 @@ class SessionClient:
         return None
 
     def _format_message(self, packet: dict[str, Any]) -> str:
+        repo = packet.get("repository_full_name") or "unknown-repo"
+        issue_number = packet.get("issue_number") or "?"
+        classification = packet.get("classification") or "unknown"
+        trigger = "/".join(part for part in [packet.get("event_type"), packet.get("action")] if part)
+        summary = (packet.get("summary") or "").strip()
+        target_agent = packet.get("target_agent") or "assigned agent"
         payload = json.dumps(packet, ensure_ascii=False, indent=2)
         return (
-            "SYSTEM EVENT: GitHub webhook actionable event\n\n"
-            "Process this event as an operations wake notification. "
-            "Acknowledge receipt, decide whether follow-up is needed, and keep actions narrow to the issue context.\n\n"
-            f"{payload}"
+            f"Aether review requested: {repo} #{issue_number}\n"
+            f"Trigger: {trigger or 'github_webhook'}\n"
+            f"Classification: {classification}\n"
+            f"Meaning: the assigned agent ({target_agent}) reported completion and is waiting on Aether review.\n"
+            "Expected action: review outcome, then either accept/close or return work to the agent with `dispatch:ready`."
+            + (f"\nSummary: {summary}" if summary else "")
+            + "\n\nRaw event packet:\n"
+            + payload
         )
