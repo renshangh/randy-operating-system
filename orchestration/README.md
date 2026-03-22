@@ -12,6 +12,12 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `adapters/ember_runner.py` — Ember adapter scaffold
 - `github_client.py` — minimal GitHub issue comment/label wrapper
 - `reporting.py` — result comment + label transition logic
+- `amy_transcript_adapter.py` — Amy Mac Mini transcript JSONL adapter for mirror events
+- `discord_output.py` — shared Discord webhook sender used by mirroring/notice flows
+- `mirror_ledger.py` — SQLite dedupe + cursor state for transcript mirroring
+- `mirror_amy_to_discord.py` — narrow validation-oriented Amy -> Discord mirror runner
+- `sarah_telegram_adapter.py` — Sarah Telegram session discovery + transcript adapter
+- `mirror_sarah_telegram_to_discord.py` — narrow validation-oriented Sarah Telegram -> Discord mirror runner
 
 ## Environment variables
 - `GITHUB_WEBHOOK_SECRET` — required GitHub webhook HMAC secret
@@ -23,8 +29,19 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `ENABLE_DIRECT_SESSION_WAKE` — enable local direct OpenClaw wake path for accepted completion/command events
 - `AETHER_SESSION_LABEL` — logical target label for ledger/audit, default `aether-ops-inbox`
 - `AETHER_SESSION_ID` — concrete OpenClaw session id used by the local direct-wake transport
+- `AETHER_SESSION_REGISTRY` — optional registry path used to resolve the active Aether session id when `AETHER_SESSION_ID` is unset, default `~/.openclaw/workspace/aether_session_registry.json`
 - `SESSION_SEND_TIMEOUT_SECONDS` — timeout for direct wake send, default `60`
 - `SESSION_ACK_TIMEOUT_SECONDS` — reserved for Phase 2 ack timeout handling, default `120`
+- `AETHER_RELAY_HOST` — MacBook relay ingress bind host, default `127.0.0.1`
+- `AETHER_RELAY_PORT` — MacBook relay ingress port, default `8791`
+- `AETHER_RELAY_SECRET` — shared secret required by the MacBook relay ingress
+- `AETHER_RELAY_SENDER_ID` — expected relay sender id, default `mac-mini`
+- `AETHER_RELAY_DEDUPE_DB` — local SQLite path for relay dedupe/ack state, default `orchestration/aether_relay_ingress.sqlite`
+- `AETHER_RELAY_TIMEOUT_SECONDS` — timeout for injecting into Aether from the MacBook ingress, default `30`
+- `DISCORD_REVIEW_WEBHOOK_URL` — optional Discord webhook for the validation review surface; `mirror_amy_to_discord.py` falls back to `DISCORD_HEARTBEAT_WEBHOOK_URL` if unset
+- `AMY_TRANSCRIPT_PATH` — optional override for the Amy transcript JSONL path, default: `~/.openclaw/agents/amy/sessions/4da4b59b-d945-43b6-8707-06e2cc2d88c2.jsonl`
+- `SARAH_SESSIONS_INDEX_PATH` — optional override for Sarah session discovery index, default: `~/.openclaw/agents/sarah/sessions/sessions.json`
+- `MIRROR_LEDGER_PATH` — optional SQLite path for mirror dedupe + cursor state, default: `orchestration/mirror_ledger.sqlite`
 
 ## Start listener
 ```bash

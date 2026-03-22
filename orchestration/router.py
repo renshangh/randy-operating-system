@@ -13,6 +13,7 @@ from orchestration.task_packet import build_task_packet
 
 SUPPORTED_AGENT_LABELS = {"agent:ember": "ember", "agent:sarah": "sarah", "agent:sentinel": "sentinel"}
 RESULT_LABELS = {"dispatch:running", "dispatch:done", "dispatch:blocked", "dispatch:failed"}
+STATUS_DONE_LABEL = "status:done"
 
 
 def _default_repo_paths() -> dict[str, str]:
@@ -62,6 +63,10 @@ class Router:
     def handle_event(self, normalized_event: dict[str, Any]) -> dict[str, Any]:
         if normalized_event.get("event_type") == "issue_comment":
             return self._handle_completion_event(normalized_event)
+        if normalized_event.get("event_type") == "issues" and normalized_event.get("action") == "labeled":
+            event_label = str(normalized_event.get("event_label") or "").strip().lower()
+            if event_label == STATUS_DONE_LABEL:
+                return self._handle_completion_label_event(normalized_event, event_label)
         return self._handle_dispatch_event(normalized_event)
 
     def _handle_dispatch_event(self, normalized_event: dict[str, Any]) -> dict[str, Any]:
@@ -87,8 +92,8 @@ class Router:
         if "dispatch:ready" not in labels:
             return self._ignore(delivery_id, repo, issue_number, "dispatch_not_ready")
 
-        if "dispatch:running" in labels or "dispatch:done" in labels:
-            return self._ignore(delivery_id, repo, issue_number, "already_running_or_done")
+        if STATUS_DONE_LABEL in labels:
+            return self._ignore(delivery_id, repo, issue_number, "already_done")
 
         local_repo_path = self.repo_paths.get(repo)
         if not local_repo_path:
@@ -169,31 +174,13 @@ class Router:
         parsed_completion = self._parse_completion_comment(comment_body)
         if parsed_completion:
             status, agent, summary = parsed_completion
-            decision = f"completion:{status}"
-            self.ledger.record(
-                delivery_id,
-                repo,
-                issue_number,
-                decision,
-                event_type=normalized_event.get("event_type"),
-                event_action=normalized_event.get("action"),
-                classification=decision,
-                target_agent=agent,
-                accepted=True,
+            return self._accept_completion_event(
+                normalized_event,
+                status=status,
+                agent=agent,
+                summary=summary,
                 note=f"agent={agent}; summary={summary}",
-                ack_status="pending",
             )
-            return {
-                "accepted": True,
-                "status": decision,
-                "classification": decision,
-                "agent": agent,
-                "repository_full_name": repo,
-                "issue_number": issue_number,
-                "summary": summary,
-                "notice_only": True,
-                "requires_aether_wake": True,
-            }
 
         parsed_command = self._parse_operator_command(comment_body)
         if parsed_command:
@@ -225,6 +212,70 @@ class Router:
             }
 
         return self._ignore(delivery_id, repo, issue_number, "non_actionable_comment")
+
+    def _handle_completion_label_event(self, normalized_event: dict[str, Any], event_label: str) -> dict[str, Any]:
+        delivery_id = normalized_event.get("delivery_id")
+        repo = normalized_event.get("repository_full_name")
+        issue_number = int(normalized_event.get("issue_number") or 0)
+        issue_state = normalized_event.get("issue_state")
+        labels = set(normalized_event.get("labels") or [])
+
+        if self.ledger.has_delivery(delivery_id):
+            return self._ignore(delivery_id, repo, issue_number, "duplicate_delivery")
+        if issue_state != "open":
+            return self._ignore(delivery_id, repo, issue_number, "issue_not_open")
+
+        if event_label != STATUS_DONE_LABEL:
+            return self._ignore(delivery_id, repo, issue_number, "non_actionable_label")
+
+        agent_labels = sorted(label for label in labels if label.startswith("agent:"))
+        agent = SUPPORTED_AGENT_LABELS.get(agent_labels[0], agent_labels[0].split(":", 1)[-1]) if agent_labels else "unknown"
+        summary = f"completion label received ({event_label})"
+        return self._accept_completion_event(
+            normalized_event,
+            status="done",
+            agent=agent,
+            summary=summary,
+            note=f"label={event_label}; agent={agent}",
+        )
+
+    def _accept_completion_event(
+        self,
+        normalized_event: dict[str, Any],
+        *,
+        status: str,
+        agent: str,
+        summary: str,
+        note: str,
+    ) -> dict[str, Any]:
+        delivery_id = normalized_event.get("delivery_id")
+        repo = normalized_event.get("repository_full_name")
+        issue_number = int(normalized_event.get("issue_number") or 0)
+        decision = f"completion:{status}"
+        self.ledger.record(
+            delivery_id,
+            repo,
+            issue_number,
+            decision,
+            event_type=normalized_event.get("event_type"),
+            event_action=normalized_event.get("action"),
+            classification=decision,
+            target_agent=agent,
+            accepted=True,
+            note=note,
+            ack_status="pending",
+        )
+        return {
+            "accepted": True,
+            "status": decision,
+            "classification": decision,
+            "agent": agent,
+            "repository_full_name": repo,
+            "issue_number": issue_number,
+            "summary": summary,
+            "notice_only": True,
+            "requires_aether_wake": True,
+        }
 
     def _parse_completion_comment(self, comment_body: str) -> tuple[str, str, str] | None:
         status_match = re.search(r"^Status:\s*(done|blocked|failed)\b", comment_body, re.IGNORECASE | re.MULTILINE)

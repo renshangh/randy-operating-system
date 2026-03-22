@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from orchestration.config import ListenerConfig
@@ -22,6 +25,12 @@ class SessionClient:
     def __init__(self, config: ListenerConfig):
         self.config = config
 
+    def handoff_target(self) -> dict[str, str | None]:
+        return {
+            "session_label": self.config.aether_session_label,
+            "session_id": self._resolve_session_id(),
+        }
+
     def send_event(self, packet: dict[str, Any]) -> SessionSendResult:
         if not self.config.enable_direct_session_wake:
             return SessionSendResult(
@@ -31,7 +40,8 @@ class SessionClient:
                 error="direct_session_wake_disabled",
             )
 
-        if not self.config.aether_session_id:
+        session_id = self._resolve_session_id()
+        if not session_id:
             return SessionSendResult(
                 ok=False,
                 status="failed",
@@ -40,11 +50,12 @@ class SessionClient:
             )
 
         message = self._format_message(packet)
+        openclaw_bin = shutil.which("openclaw") or "openclaw"
         command = [
-            "openclaw",
+            openclaw_bin,
             "agent",
             "--session-id",
-            self.config.aether_session_id,
+            session_id,
             "--message",
             message,
             "--timeout",
@@ -58,7 +69,7 @@ class SessionClient:
                 ok=False,
                 status="failed",
                 session_label=self.config.aether_session_label,
-                session_id=self.config.aether_session_id,
+                session_id=session_id,
                 error=str(exc),
             )
 
@@ -69,7 +80,7 @@ class SessionClient:
                 ok=False,
                 status="failed",
                 session_label=self.config.aether_session_label,
-                session_id=self.config.aether_session_id,
+                session_id=session_id,
                 error=stderr or stdout or f"openclaw agent exit {completed.returncode}",
                 stdout=stdout,
             )
@@ -78,9 +89,26 @@ class SessionClient:
             ok=True,
             status="sent",
             session_label=self.config.aether_session_label,
-            session_id=self.config.aether_session_id,
+            session_id=session_id,
             stdout=stdout,
         )
+
+    def _resolve_session_id(self) -> str | None:
+        if self.config.aether_session_id and self.config.aether_session_id != "REPLACE_ME":
+            return self.config.aether_session_id
+
+        registry_path = Path(os.path.expanduser(self.config.aether_session_registry))
+        try:
+            data = json.loads(registry_path.read_text())
+        except Exception:
+            return None
+
+        entry = data.get(self.config.aether_session_label)
+        if isinstance(entry, dict):
+            return entry.get("sessionId")
+        if isinstance(entry, str):
+            return entry
+        return None
 
     def _format_message(self, packet: dict[str, Any]) -> str:
         payload = json.dumps(packet, ensure_ascii=False, indent=2)

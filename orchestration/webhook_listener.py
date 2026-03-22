@@ -20,6 +20,8 @@ LOGGER = logging.getLogger("github_webhook_listener")
 SUPPORTED_EVENTS = {"issues", "issue_comment"}
 SUPPORTED_ISSUE_ACTIONS = {"opened", "edited", "labeled", "reopened"}
 SUPPORTED_COMMENT_ACTIONS = {"created"}
+DISPATCH_READY_LABEL = "dispatch:ready"
+STATUS_DONE_LABEL = "status:done"
 
 
 class WebhookHandler(BaseHTTPRequestHandler):
@@ -288,7 +290,8 @@ def _is_actionable(normalized_event: dict[str, Any]) -> bool:
         if issue_state != "open" or action not in SUPPORTED_ISSUE_ACTIONS:
             return False
         if action == "labeled":
-            return (normalized_event.get("event_label") or "") == "dispatch:ready"
+            event_label = (normalized_event.get("event_label") or "").strip().lower()
+            return event_label in {DISPATCH_READY_LABEL, STATUS_DONE_LABEL}
         return True
 
     if event_type == "issue_comment":
