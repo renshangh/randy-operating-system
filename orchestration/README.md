@@ -43,6 +43,12 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `SARAH_SESSIONS_INDEX_PATH` — optional override for Sarah session discovery index, default: `~/.openclaw/agents/sarah/sessions/sessions.json`
 - `MIRROR_LEDGER_PATH` — optional SQLite path for mirror dedupe + cursor state, default: `orchestration/mirror_ledger.sqlite`
 
+## Sarah Telegram mirror runner notes
+- Run as a module from the repo root: `python3 -m orchestration.mirror_sarah_telegram_to_discord ...`
+- Discovery prefers `agent:sarah:telegram:*` keys but also falls back to session metadata that identifies a Sarah-owned Telegram session.
+- If runtime session keys differ from the expected prefix, pass one or more explicit `--session-key` values.
+- Malformed/blank transcript lines are skipped instead of aborting the whole run.
+
 ## Start listener
 ```bash
 export GITHUB_WEBHOOK_SECRET='replace-me'

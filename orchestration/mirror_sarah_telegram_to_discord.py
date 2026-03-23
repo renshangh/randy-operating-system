@@ -8,7 +8,11 @@ from pathlib import Path
 
 from orchestration.discord_output import DiscordWebhookOutput
 from orchestration.mirror_ledger import MirrorLedger
-from orchestration.sarah_telegram_adapter import DEFAULT_SARAH_SESSIONS_INDEX, SarahTelegramAdapter
+from orchestration.sarah_telegram_adapter import (
+    DEFAULT_SARAH_SESSIONS_INDEX,
+    DEFAULT_SESSION_KEY_PREFIXES,
+    SarahTelegramAdapter,
+)
 
 DEFAULT_LEDGER_PATH = Path("orchestration/mirror_ledger.sqlite")
 
@@ -28,19 +32,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sessions-index-path", default=os.environ.get("SARAH_SESSIONS_INDEX_PATH", str(DEFAULT_SARAH_SESSIONS_INDEX)))
     parser.add_argument("--ledger-path", default=os.environ.get("MIRROR_LEDGER_PATH", str(DEFAULT_LEDGER_PATH)))
     parser.add_argument("--webhook-url", default=os.environ.get("DISCORD_REVIEW_WEBHOOK_URL") or os.environ.get("DISCORD_HEARTBEAT_WEBHOOK_URL", ""))
-    parser.add_argument("--session-key-prefix", default="agent:sarah:telegram:")
+    parser.add_argument(
+        "--session-key-prefix",
+        action="append",
+        dest="session_key_prefixes",
+        help="Repeatable session-key prefix filter. Defaults to known Sarah Telegram prefixes plus metadata-based telegram detection.",
+    )
+    parser.add_argument(
+        "--session-key",
+        action="append",
+        dest="session_keys",
+        help="Explicit session key(s) to include even if they do not match the default prefix.",
+    )
     parser.add_argument("--max-events-per-source", type=int, default=5)
     parser.add_argument("--start-line", type=int, default=None, help="Override saved cursors and start every selected source from this line.")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
 
-def run_once(*, sessions_index_path: str, ledger_path: str, webhook_url: str, session_key_prefix: str, max_events_per_source: int, start_line: int | None, dry_run: bool) -> SarahMirrorRunSummary:
+def run_once(*, sessions_index_path: str, ledger_path: str, webhook_url: str, session_key_prefixes: tuple[str, ...], explicit_session_keys: set[str], max_events_per_source: int, start_line: int | None, dry_run: bool) -> SarahMirrorRunSummary:
     adapter = SarahTelegramAdapter(sessions_index_path)
     ledger = MirrorLedger(ledger_path)
     output = DiscordWebhookOutput(webhook_url)
 
-    sources = [source for source in adapter.discover_sources() if source.session_key.startswith(session_key_prefix)]
+    sources = adapter.discover_sources(session_key_prefixes=session_key_prefixes, explicit_session_keys=explicit_session_keys)
     candidate_events = delivered = duplicates = failed = 0
 
     for source in sources:
@@ -106,11 +121,14 @@ def run_once(*, sessions_index_path: str, ledger_path: str, webhook_url: str, se
 
 def main() -> int:
     args = parse_args()
+    session_key_prefixes = tuple(args.session_key_prefixes or DEFAULT_SESSION_KEY_PREFIXES)
+    explicit_session_keys = set(args.session_keys or [])
     summary = run_once(
         sessions_index_path=args.sessions_index_path,
         ledger_path=args.ledger_path,
         webhook_url=args.webhook_url,
-        session_key_prefix=args.session_key_prefix,
+        session_key_prefixes=session_key_prefixes,
+        explicit_session_keys=explicit_session_keys,
         max_events_per_source=args.max_events_per_source,
         start_line=args.start_line,
         dry_run=args.dry_run,

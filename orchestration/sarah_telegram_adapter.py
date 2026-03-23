@@ -9,6 +9,7 @@ from typing import Any, Iterable
 DEFAULT_SARAH_SESSIONS_INDEX = Path.home() / ".openclaw/agents/sarah/sessions/sessions.json"
 DEFAULT_SARAH_SESSIONS_DIR = Path.home() / ".openclaw/agents/sarah/sessions"
 SARAH_AGENT_ID = "sarah"
+DEFAULT_SESSION_KEY_PREFIXES = ("agent:sarah:telegram:",)
 
 
 @dataclass(frozen=True)
@@ -59,15 +60,27 @@ class SarahTelegramAdapter:
     def __init__(self, sessions_index_path: str | Path = DEFAULT_SARAH_SESSIONS_INDEX):
         self.sessions_index_path = Path(sessions_index_path).expanduser()
 
-    def discover_sources(self) -> list[SarahTelegramSource]:
+    def discover_sources(
+        self,
+        *,
+        session_key_prefixes: tuple[str, ...] = DEFAULT_SESSION_KEY_PREFIXES,
+        explicit_session_keys: set[str] | None = None,
+    ) -> list[SarahTelegramSource]:
         payload = json.loads(self.sessions_index_path.read_text(encoding="utf-8"))
         sources: list[SarahTelegramSource] = []
+        explicit_session_keys = explicit_session_keys or set()
         for session_key, entry in payload.items():
-            if not session_key.startswith("agent:sarah:telegram:"):
+            if not self._should_include_session(
+                session_key,
+                entry,
+                session_key_prefixes=session_key_prefixes,
+                explicit_session_keys=explicit_session_keys,
+            ):
                 continue
             session_id = str(entry.get("sessionId") or "").strip()
             session_file = str(entry.get("sessionFile") or "").strip()
             origin = entry.get("origin") or {}
+            delivery_context = entry.get("deliveryContext") or {}
             if not session_id or not session_file:
                 continue
             sources.append(
@@ -75,9 +88,26 @@ class SarahTelegramAdapter:
                     session_key=session_key,
                     session_id=session_id,
                     transcript_path=session_file,
-                    account_id=str(origin.get("accountId") or entry.get("lastAccountId") or ""),
-                    chat_id=str(entry.get("groupId") or origin.get("to") or ""),
-                    chat_type=str(entry.get("chatType") or origin.get("chatType") or ""),
+                    account_id=str(
+                        origin.get("accountId")
+                        or delivery_context.get("accountId")
+                        or entry.get("lastAccountId")
+                        or ""
+                    ),
+                    chat_id=str(
+                        entry.get("groupId")
+                        or origin.get("to")
+                        or delivery_context.get("to")
+                        or ""
+                    ),
+                    chat_type=str(
+                        entry.get("chatType")
+                        or origin.get("chatType")
+                        or delivery_context.get("chatType")
+                        or delivery_context.get("channel")
+                        or entry.get("lastChannel")
+                        or ""
+                    ),
                     subject=str(entry.get("subject") or entry.get("displayName") or ""),
                 )
             )
@@ -89,10 +119,46 @@ class SarahTelegramAdapter:
             for line_number, raw_line in enumerate(handle, start=1):
                 if line_number <= start_line:
                     continue
-                entry = json.loads(raw_line)
+                raw_line = raw_line.strip()
+                if not raw_line:
+                    continue
+                try:
+                    entry = json.loads(raw_line)
+                except json.JSONDecodeError:
+                    continue
                 event = self._normalize_event(source, transcript_path, entry, line_number)
                 if event is not None:
                     yield event
+
+    def _should_include_session(
+        self,
+        session_key: str,
+        entry: dict[str, Any],
+        *,
+        session_key_prefixes: tuple[str, ...],
+        explicit_session_keys: set[str],
+    ) -> bool:
+        if session_key in explicit_session_keys:
+            return True
+        if any(session_key.startswith(prefix) for prefix in session_key_prefixes):
+            return True
+        channel_candidates = {
+            str(entry.get("channel") or "").strip().lower(),
+            str(entry.get("lastChannel") or "").strip().lower(),
+            str((entry.get("origin") or {}).get("channel") or "").strip().lower(),
+            str((entry.get("origin") or {}).get("chatType") or "").strip().lower(),
+            str((entry.get("deliveryContext") or {}).get("channel") or "").strip().lower(),
+            str(entry.get("chatType") or "").strip().lower(),
+        }
+        if "telegram" not in channel_candidates:
+            return False
+        agent_candidates = {
+            session_key.lower(),
+            str(entry.get("displayName") or "").strip().lower(),
+            str(entry.get("subject") or "").strip().lower(),
+            str(entry.get("label") or "").strip().lower(),
+        }
+        return any("sarah" in candidate for candidate in agent_candidates if candidate)
 
     def _normalize_event(
         self,
