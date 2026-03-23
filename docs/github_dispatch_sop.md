@@ -155,6 +155,37 @@ If a tracked issue is stale:
      - the exact error/blocker
      - the next debugging step
 
+#### Recommended Discord follow-up templates
+Use explicit agent @mentions in all agent-channel follow-ups.
+
+Checkpoint / overtime follow-up:
+
+```text
+<@AGENT_ID> AgentName — quick check on RepoName issue #ISSUE_NUMBER.
+
+If you’re still actively working, post a substantive GitHub progress update now with current status, blocker if any, and next step.
+
+If not, release it back now through the normal return path:
+- remove `dispatch:ready`
+- add `status:done`
+- post a concise `Author: AgentName` GitHub comment with what you attempted, the exact blocker, and the next step
+
+Issue: ISSUE_URL
+```
+
+Final takeover / do-it-now hand-back:
+
+```text
+<@AGENT_ID> AgentName — stop active work on RepoName issue #ISSUE_NUMBER and hand it back now.
+
+Use the normal return path:
+- remove `dispatch:ready`
+- add `status:done`
+- post a substantive `Author: AgentName` GitHub comment with what you completed, the exact blocker/error, and the next debugging step
+
+Issue: ISSUE_URL
+```
+
 ### When to remove an issue from the watchlist
 Remove the issue from the watchlist when any of the following happen:
 - Aether accepts the work
