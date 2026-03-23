@@ -20,6 +20,7 @@
         "mention": "<@1483277864655651028>",
         "agent_name": "Sarah"
       },
+      "recommended_message_mode": "final",
       "notes": "Remove from watchlist when accepted, closed, fully taken back, or reassigned.",
       "warning_sent_at": null
     }
