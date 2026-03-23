@@ -193,6 +193,61 @@ Remove the issue from the watchlist when any of the following happen:
 - Aether fully takes the issue back and it is no longer actively delegated
 - ownership changes to a different agent (remove the old entry and create a new one)
 
+## Daily Orchestration Probe (Repo-Selective)
+Aether must support a simple morning probe to confirm the canonical GitHub -> webhook/listener -> Aether return path is functioning.
+
+### Purpose
+This probe is a lightweight operational confidence check.
+It is not intended to test specialist quality or real task execution.
+It only tests whether the orchestration backbone can successfully recognize a returned issue and write back to GitHub.
+
+### Approved probe repos
+The morning probe may be run against one of these repos:
+- `renshangh/randy-job-hunt-pipeline`
+- `renshangh/openclaw-remote-deploy`
+- `renshangh/randy-operating-system`
+- `renshangh/marketing-ops`
+
+### Probe model
+Use a dedicated test-only issue in the selected repo, such as:
+- `Daily orchestration probe`
+
+That issue should not be used for production work.
+
+### Trigger
+The operator selects one approved repo and, on that repo's dedicated probe issue:
+- adds `status:done`
+
+Keep the probe simple.
+For the baseline test, no additional production work is required.
+
+### Expected Aether response
+If the orchestration backbone is healthy, Aether should detect the returned state and post a short acknowledgment comment on that same issue.
+
+Recommended acknowledgment shape:
+- `Author: Aether`
+- confirm the morning orchestration probe was received successfully
+- identify the observed label state
+- include a timestamp
+
+### Pass/fail rule
+- **PASS**: Aether posts the acknowledgment comment within the expected window.
+- **FAIL**: No Aether acknowledgment comment appears within the expected window.
+
+Recommended window:
+- 2 to 5 minutes
+
+### Operational meaning
+- **PASS** means the selected repo's webhook/listener/Aether return path is functioning.
+- **FAIL** means orchestration should be treated as degraded until investigated.
+
+### Morning briefing rule
+When the morning probe is run, the daily briefing should summarize:
+- probe repo
+- probe issue
+- PASS or FAIL
+- acknowledgment time if PASS
+
 ## Label-State Loop
 This is the canonical closed-loop dispatch pattern.
 
@@ -230,6 +285,56 @@ Then the issue loops back to the specialist.
 ### Meaning of the state labels
 - `dispatch:ready` = waiting on specialist
 - `status:done` = waiting on Aether review
+
+## Discord Wake-Up Fallback Rule
+When a specialist returns work, GitHub remains the source of truth, but Discord must be used as the production wake-up channel for Aether.
+
+### Authority model
+- **GitHub** = authoritative issue state, labels, substantive completion record
+- **Discord** = wake-up / notification path
+- **Aether** = validator, reviewer, closer
+
+### Why this fallback exists
+The Mac Mini GitHub webhook/update path is comparatively stable, while the MacBook-based Aether listener/wake path is not always continuously reachable. To reduce missed returns, specialists must send a Discord wake-up after completing the GitHub return path.
+
+### Specialist completion contract
+When a specialist finishes work, they must:
+1. remove `dispatch:ready`
+2. add `status:done`
+3. post a substantive GitHub comment with clear authorship
+4. send a Discord wake-up message to Aether’s production wake channel
+
+### Production wake destination
+Use Discord **`#general`** as the production wake channel/webhook.
+
+### Required Discord wake-up content
+The wake-up message should include:
+- agent name
+- repo
+- issue number
+- state (`status:done`)
+- one-line summary
+- issue URL
+
+### Standard wake-up template
+```text
+Agent return: AgentName
+Repo: owner/repo
+Issue: #ISSUE_NUMBER
+State: status:done
+Summary: one-line completion summary
+URL: ISSUE_URL
+```
+
+### Aether validation rule
+Aether must treat the Discord wake-up as a notification only.
+A valid return still requires:
+- `status:done` present
+- `dispatch:ready` absent
+- substantive GitHub comment present
+
+### Missing wake-up handling
+If GitHub state indicates a valid return but no Discord wake-up was sent, the work can still be reviewed, but this should be treated as a process miss and corrected with the specialist.
 
 ## Review Gate
 Aether reviews only after the specialist or QA specialist has posted the required output on GitHub and the issue has been returned in the review state.
