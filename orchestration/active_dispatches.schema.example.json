@@ -18,7 +18,8 @@
       "discord": {
         "channel_id": "1483274122539827341",
         "mention": "<@1483277864655651028>",
-        "agent_name": "Sarah"
+        "agent_name": "Sarah",
+        "webhook_url": "https://discord.com/api/webhooks/REPLACE/WITH_CHANNEL_WEBHOOK"
       },
       "recommended_message_mode": "final",
       "notes": "Remove from watchlist when accepted, closed, fully taken back, or reassigned.",

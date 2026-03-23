@@ -10,7 +10,7 @@
 - every 30m: ./qa-loop-skill/scripts/qa-heartbeat.sh
 
 # Active delegated issue stale check
-- every 10m: python3 orchestration/check_active_dispatches.py --stale-only
+- every 10m: python3 orchestration/check_active_dispatches.py --stale-only --intervene
 
 # 2. Sync with Randy's Live Control Board every 30 minutes
 # This ensures Sarah stays "caught up" with new board items.
