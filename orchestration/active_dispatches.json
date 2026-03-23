@@ -1,6 +1,28 @@
 {
   "version": 1,
   "description": "Active delegated GitHub issues being tracked for the 10-minute stale hand-back SOP.",
-  "updated_at": null,
-  "items": []
+  "updated_at": "2026-03-22T22:40:00-05:00",
+  "items": [
+    {
+      "repo": "renshangh/randy-operating-system",
+      "issue_number": 220,
+      "issue_url": "https://github.com/renshangh/randy-operating-system/issues/220",
+      "issue_title": "Implement Amy transcript adapter and shared Discord output for unified log mirroring",
+      "assigned_agent": "sarah",
+      "agent_label": "agent:sarah",
+      "dispatch_label": "dispatch:ready",
+      "status": "active",
+      "dispatch_started_at": "2026-03-22T22:40:00-05:00",
+      "last_meaningful_update_at": "2026-03-22T22:40:00-05:00",
+      "stale_after_minutes": 10,
+      "discord": {
+        "channel_id": "1483274122539827341",
+        "mention": "<@1483277864655651028>",
+        "agent_name": "Sarah"
+      },
+      "recommended_message_mode": "final",
+      "notes": "Remove from watchlist when accepted, closed, fully taken back, or reassigned.",
+      "warning_sent_at": null
+    }
+  ]
 }
