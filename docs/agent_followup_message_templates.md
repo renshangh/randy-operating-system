@@ -42,3 +42,27 @@ Issue: ISSUE_URL
 ## Fill-in examples
 - Sarah: `<@1483277864655651028> Sarah — ...`
 - Mark: `<@1484326408204324934> Mark — ...`
+
+## Populating `discord.webhook_url`
+Add the webhook URL directly inside each watchlist entry under `discord.webhook_url`.
+
+Example:
+
+```json
+{
+  "discord": {
+    "channel_id": "1483274122539827341",
+    "mention": "<@1483277864655651028>",
+    "agent_name": "Sarah",
+    "webhook_url": "https://discord.com/api/webhooks/REPLACE/WITH_CHANNEL_WEBHOOK"
+  }
+}
+```
+
+Use the webhook for the exact Discord channel where the follow-up should be posted.
+
+Rules:
+- one watchlist entry = one target channel webhook
+- keep `mention` and `agent_name` populated alongside `webhook_url`
+- if `webhook_url` is missing, the stale-check script will still generate the follow-up message but will not auto-send it
+- treat webhook URLs as secrets; do not paste real live values into public docs or screenshots

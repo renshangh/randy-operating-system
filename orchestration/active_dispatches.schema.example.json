@@ -22,7 +22,7 @@
         "webhook_url": "https://discord.com/api/webhooks/REPLACE/WITH_CHANNEL_WEBHOOK"
       },
       "recommended_message_mode": "final",
-      "notes": "Remove from watchlist when accepted, closed, fully taken back, or reassigned.",
+      "notes": "Set discord.webhook_url to the exact Discord channel webhook for this agent lane. Remove from watchlist when accepted, closed, fully taken back, or reassigned.",
       "warning_sent_at": null
     }
   ]
