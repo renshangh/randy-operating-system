@@ -176,6 +176,11 @@ class SarahTelegramAdapter:
         text = self._extract_visible_text(message.get("content") or [])
         if not text:
             return None
+        boilerplate_snippets = [
+            "Sarah (Strategic Ops): The Digital HQ is refreshed. Standing by for instructions, Chairman.",
+        ]
+        if any(snippet in text for snippet in boilerplate_snippets):
+            return None
         source_event_id = str(entry.get("id") or f"line-{line_number}")
         source_timestamp = str(entry.get("timestamp") or message.get("timestamp") or "")
         dedupe_seed = "|".join([
