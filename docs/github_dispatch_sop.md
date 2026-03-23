@@ -112,6 +112,56 @@ The QA comment should explicitly state:
 ### Step 7 — Send short QA notice in Discord
 Send only a brief heads-up in the QA lane, pointing back to the GitHub issue.
 
+## Active Dispatch Watchlist + 10-Minute Rule
+Aether must maintain a small, always-reachable watchlist of active delegated issues.
+
+### Purpose
+This prevents delegated work from sitting silently in `dispatch:ready` without a clean return.
+
+### What belongs on the watchlist
+Each active delegated issue should track at least:
+- repository
+- issue number
+- assigned agent
+- dispatch time
+- last meaningful update time
+- Discord follow-up channel
+- current state
+
+### When to add an issue
+Add the issue to the watchlist when Aether dispatches it to a specialist using:
+- `agent:<agentname>`
+- `dispatch:ready`
+
+### 10-minute stale check
+Aether should check the watchlist on a repeating heartbeat/poll workflow.
+
+If an issue has remained actively delegated for about 10 minutes without a clean verified return, Aether should intervene.
+
+Meaningful progress that resets the clock includes:
+- a substantive GitHub progress comment
+- a concrete pass/fail checkpoint
+- a valid return to Aether using `status:done`
+
+### Intervention when stale
+If a tracked issue is stale:
+1. Post a GitHub comment instructing the specialist to stop active work for now and release the issue back to Aether.
+2. Send a Discord follow-up to the assigned agent with an explicit @mention.
+3. The specialist should hand the issue back using the normal return path:
+   - remove `dispatch:ready`
+   - add `status:done`
+   - leave a concise GitHub comment with:
+     - what was attempted
+     - the exact error/blocker
+     - the next debugging step
+
+### When to remove an issue from the watchlist
+Remove the issue from the watchlist when any of the following happen:
+- Aether accepts the work
+- the issue is closed
+- Aether fully takes the issue back and it is no longer actively delegated
+- ownership changes to a different agent (remove the old entry and create a new one)
+
 ## Label-State Loop
 This is the canonical closed-loop dispatch pattern.
 
