@@ -46,7 +46,7 @@ python3 orchestration/model_switcher.py
 This evaluates whether the system should stay on the active model or be pushed toward the idle local model.
 
 #### 2) Wake when work arrives
-When a webhook listener, router, or dispatch entrypoint receives a new task, call:
+When a live intake path such as the webhook listener, router, or dispatch entrypoint receives a new task, call:
 
 ```bash
 python3 orchestration/model_switcher.py --wake

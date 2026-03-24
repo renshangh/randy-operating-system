@@ -26,18 +26,12 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `ORCHESTRATION_REMOTE_DEPLOY_PATH` — optional explicit local path for `renshangh/openclaw-remote-deploy`
 - `LISTENER_HOST` — default `127.0.0.1`
 - `LISTENER_PORT` — default `8787`
-- `ENABLE_DIRECT_SESSION_WAKE` — enable local direct OpenClaw wake path for accepted completion/command events
-- `AETHER_SESSION_LABEL` — logical target label for ledger/audit, default `aether-ops-inbox`
-- `AETHER_SESSION_ID` — concrete OpenClaw session id used by the local direct-wake transport
-- `AETHER_SESSION_REGISTRY` — optional registry path used to resolve the active Aether session id when `AETHER_SESSION_ID` is unset, default `~/.openclaw/workspace/aether_session_registry.json`
-- `SESSION_SEND_TIMEOUT_SECONDS` — timeout for direct wake send, default `60`
-- `SESSION_ACK_TIMEOUT_SECONDS` — reserved for Phase 2 ack timeout handling, default `120`
-- `AETHER_RELAY_HOST` — MacBook relay ingress bind host, default `127.0.0.1`
-- `AETHER_RELAY_PORT` — MacBook relay ingress port, default `8791`
-- `AETHER_RELAY_SECRET` — shared secret required by the MacBook relay ingress
-- `AETHER_RELAY_SENDER_ID` — expected relay sender id, default `mac-mini`
-- `AETHER_RELAY_DEDUPE_DB` — local SQLite path for relay dedupe/ack state, default `orchestration/aether_relay_ingress.sqlite`
-- `AETHER_RELAY_TIMEOUT_SECONDS` — timeout for injecting into Aether from the MacBook ingress, default `30`
+- `ENABLE_DIRECT_SESSION_WAKE` — legacy direct OpenClaw wake path; keep disabled in the current GitHub + Discord production model
+- `AETHER_SESSION_LABEL` — legacy label for the deprecated direct-wake path
+- `AETHER_SESSION_ID` — legacy session id for the deprecated direct-wake path
+- `AETHER_SESSION_REGISTRY` — legacy registry path for the deprecated direct-wake path
+- `SESSION_SEND_TIMEOUT_SECONDS` — legacy timeout for the deprecated direct-wake path
+- `SESSION_ACK_TIMEOUT_SECONDS` — reserved ack timeout field; not part of the current Discord wake flow
 - `DISCORD_REVIEW_WEBHOOK_URL` — optional Discord webhook for the validation review surface; `mirror_amy_to_discord.py` falls back to `DISCORD_HEARTBEAT_WEBHOOK_URL` if unset
 - `AMY_TRANSCRIPT_PATH` — optional override for the Amy transcript JSONL path, default: `~/.openclaw/agents/amy/sessions/4da4b59b-d945-43b6-8707-06e2cc2d88c2.jsonl`
 - `SARAH_SESSIONS_INDEX_PATH` — optional override for Sarah session discovery index, default: `~/.openclaw/agents/sarah/sessions/sessions.json`
@@ -63,10 +57,9 @@ python -m orchestration.webhook_listener
 - Specialist completion comments beginning with `Status: done`, `Status: blocked`, or `Status: failed` are treated as actionable completion events and recorded without redispatching work.
 - Optional: set `DISCORD_HEARTBEAT_WEBHOOK_URL` (and `DISCORD_AETHER_USER_ID`) to auto-post a Discord wake-up when a valid specialist return is observed.
 - A valid Discord wake-up now requires a completion comment plus current GitHub state showing `status:done` present and `dispatch:ready` absent; a bare label event is recorded but does not emit the Discord wake yet.
-- Phase 1 direct wake is wired for accepted completion comments and operator commands (`/retry`, `/status`, `/hold`) using `openclaw agent --session-id ...` when explicitly enabled.
-- The Mac Mini -> MacBook relay experiment is no longer part of the active orchestration path; keep GitHub as durable state and Discord as the human-facing mirror/clarification layer.
+- The current production model is: GitHub = authoritative state, Discord `#general` = wake path, Aether = validator/reviewer.
+- The old MacBook direct-wake / relay path is deprecated and should not be treated as canonical.
 - Background poller scripts should set an explicit PATH instead of relying on cron/launchd defaults; `issue_50_progress_bus_poll.sh` was hardened after repeated `gh: command not found` failures in background execution.
-- Discord heartbeat remains a human-facing mirror; the direct wake path is the machine trigger when enabled.
-- `run_ledger.sqlite` records routing plus direct wake / Discord mirror state for each accepted delivery.
+- `run_ledger.sqlite` records routing plus Discord wake / notice state for each accepted delivery.
 - The Ember adapter boundary exists and writes local artifacts, but live runtime invocation is not yet wired.
 - Reporting currently posts concise issue comments and applies result labels via `gh`.
