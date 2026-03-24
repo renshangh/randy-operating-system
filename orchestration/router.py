@@ -165,6 +165,7 @@ class Router:
         issue_number = int(normalized_event.get("issue_number") or 0)
         issue_state = normalized_event.get("issue_state")
         comment_body = (normalized_event.get("comment_body") or "").strip()
+        labels = set(normalized_event.get("labels") or [])
 
         if self.ledger.has_delivery(delivery_id):
             return self._ignore(delivery_id, repo, issue_number, "duplicate_delivery")
@@ -174,12 +175,20 @@ class Router:
         parsed_completion = self._parse_completion_comment(comment_body)
         if parsed_completion:
             status, agent, summary = parsed_completion
+            has_valid_return_state = STATUS_DONE_LABEL in labels and "dispatch:ready" not in labels
+            has_substantive_comment = self._is_substantive_completion_comment(comment_body)
             return self._accept_completion_event(
                 normalized_event,
                 status=status,
                 agent=agent,
                 summary=summary,
                 note=f"agent={agent}; summary={summary}",
+                requires_discord_wake=has_valid_return_state and has_substantive_comment,
+                validation_reason=(
+                    "valid_specialist_return"
+                    if has_valid_return_state and has_substantive_comment
+                    else "completion_comment_without_valid_return_state"
+                ),
             )
 
         parsed_command = self._parse_operator_command(comment_body)
@@ -237,6 +246,12 @@ class Router:
             agent=agent,
             summary=summary,
             note=f"label={event_label}; agent={agent}",
+            requires_discord_wake=False,
+            validation_reason=(
+                "awaiting_substantive_completion_comment"
+                if "dispatch:ready" not in labels
+                else "dispatch_ready_still_present"
+            ),
         )
 
     def _accept_completion_event(
@@ -247,6 +262,8 @@ class Router:
         agent: str,
         summary: str,
         note: str,
+        requires_discord_wake: bool,
+        validation_reason: str,
     ) -> dict[str, Any]:
         delivery_id = normalized_event.get("delivery_id")
         repo = normalized_event.get("repository_full_name")
@@ -275,6 +292,8 @@ class Router:
             "summary": summary,
             "notice_only": True,
             "requires_aether_wake": True,
+            "requires_discord_wake": requires_discord_wake,
+            "validation_reason": validation_reason,
         }
 
     def _parse_completion_comment(self, comment_body: str) -> tuple[str, str, str] | None:
@@ -295,6 +314,17 @@ class Router:
             break
         summary = summary or f"completion comment received ({status})"
         return status, agent, summary
+
+    def _is_substantive_completion_comment(self, comment_body: str) -> bool:
+        lines = [line.strip() for line in comment_body.splitlines() if line.strip()]
+        content_lines = []
+        for line in lines:
+            lower = line.lower()
+            if lower.startswith("status:") or lower.startswith("agent:") or lower.startswith("author:"):
+                continue
+            content_lines.append(line)
+        substantive_text = " ".join(content_lines).strip()
+        return len(substantive_text) >= 12
 
     def _parse_operator_command(self, comment_body: str) -> str | None:
         stripped = comment_body.strip().lower()

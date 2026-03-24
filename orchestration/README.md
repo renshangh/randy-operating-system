@@ -61,7 +61,8 @@ python -m orchestration.webhook_listener
 - The listener intentionally stays narrow: receive, verify, normalize, and hand off.
 - Dispatch start remains label-driven via `dispatch:ready` + exactly one `agent:*` label.
 - Specialist completion comments beginning with `Status: done`, `Status: blocked`, or `Status: failed` are treated as actionable completion events and recorded without redispatching work.
-- Optional: set `DISCORD_HEARTBEAT_WEBHOOK_URL` (and `DISCORD_AETHER_USER_ID`) to auto-post completion notices to Discord.
+- Optional: set `DISCORD_HEARTBEAT_WEBHOOK_URL` (and `DISCORD_AETHER_USER_ID`) to auto-post a Discord wake-up when a valid specialist return is observed.
+- A valid Discord wake-up now requires a completion comment plus current GitHub state showing `status:done` present and `dispatch:ready` absent; a bare label event is recorded but does not emit the Discord wake yet.
 - Phase 1 direct wake is wired for accepted completion comments and operator commands (`/retry`, `/status`, `/hold`) using `openclaw agent --session-id ...` when explicitly enabled.
 - The Mac Mini -> MacBook relay experiment is no longer part of the active orchestration path; keep GitHub as durable state and Discord as the human-facing mirror/clarification layer.
 - Background poller scripts should set an explicit PATH instead of relying on cron/launchd defaults; `issue_50_progress_bus_poll.sh` was hardened after repeated `gh: command not found` failures in background execution.
