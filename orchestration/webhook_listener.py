@@ -7,9 +7,10 @@ import logging
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
+from urllib import request
+from urllib.error import HTTPError, URLError
 
 from orchestration.config import ListenerConfig
-from orchestration.discord_output import DiscordWebhookOutput
 from orchestration.reporting import report_result
 from orchestration.router import Router
 from orchestration.session_client import SessionClient
@@ -130,12 +131,12 @@ class WebhookHandler(BaseHTTPRequestHandler):
                     error=delivery_result.error,
                 )
         if router_result.get("accepted"):
-            discord_result = _send_discord_wake(self.server.config, normalized_event, router_result, delivery_result)
+            discord_result = _send_discord_heartbeat(self.server.config, normalized_event, router_result, delivery_result)
             if discord_result:
                 self.server.router.ledger.mark_discord_notice(
                     normalized_event["delivery_id"],
-                    "sent" if discord_result.get("sent") else discord_result.get("reason", "failed"),
-                    error=discord_result.get("error") or discord_result.get("reason"),
+                    "sent" if discord_result.get("sent") else "failed",
+                    error=discord_result.get("error"),
                 )
         self._json_response(
             HTTPStatus.ACCEPTED,
@@ -160,7 +161,7 @@ class WebhookServer(ThreadingHTTPServer):
         self.session_client = SessionClient(config)
 
 
-def _send_discord_wake(
+def _send_discord_heartbeat(
     config: ListenerConfig,
     normalized_event: dict[str, Any],
     router_result: dict[str, Any],
@@ -170,8 +171,11 @@ def _send_discord_wake(
     if not webhook_url:
         return {"sent": False, "reason": "webhook_not_configured"}
 
-    if not router_result.get("requires_discord_wake"):
-        return {"sent": False, "reason": router_result.get("validation_reason", "discord_wake_not_required")}
+    if not (
+        router_result.get("status", "").startswith("completion:")
+        or router_result.get("status", "").startswith("command:")
+    ):
+        return {"sent": False, "reason": "not_notice_event"}
 
     issue_number = normalized_event.get("issue_number")
     repo_name = normalized_event.get("repository_full_name")
@@ -186,35 +190,52 @@ def _send_discord_wake(
         f"Repo: {repo_name}\n"
         f"Issue: #{issue_number}\n"
         f"State: status:{status}\n"
-        f"Summary: {summary}\n"
-        f"URL: {issue_url or 'n/a'}"
+        f"Summary: {summary}"
     )
+    if issue_url:
+        content += f"\nURL: {issue_url}"
 
-    if direct_wake_result is not None:
-        wake_status = "sent" if getattr(direct_wake_result, "ok", False) else f"failed ({getattr(direct_wake_result, 'error', 'unknown_error')})"
-        content += f"\nDirect wake: {wake_status}"
-
-    sender = DiscordWebhookOutput(webhook_url, timeout_seconds=10)
-    result = sender.send_content(content)
-    if result.ok:
+    payload = json.dumps({"content": content}).encode("utf-8")
+    req = request.Request(
+        webhook_url,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "openclaw-github-webhook-listener/1.0",
+        },
+        method="POST",
+    )
+    try:
+        with request.urlopen(req, timeout=10) as response:
+            status_code = getattr(response, "status", response.getcode())
         LOGGER.info(
-            "Discord wake sent repo=%s issue=%s status=%s agent=%s http_status=%s",
+            "Discord heartbeat sent repo=%s issue=%s status=%s agent=%s http_status=%s",
             repo_name,
             issue_number,
             status,
             agent,
-            result.http_status,
+            status_code,
         )
-        return {"sent": True, "http_status": result.http_status}
-
-    LOGGER.error(
-        "Discord wake failed repo=%s issue=%s http_status=%s error=%s",
-        repo_name,
-        issue_number,
-        result.http_status,
-        result.error,
-    )
-    return {"sent": False, "http_status": result.http_status, "error": result.error}
+        return {"sent": True, "http_status": status_code}
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        LOGGER.error(
+            "Discord heartbeat failed repo=%s issue=%s http_status=%s body=%s",
+            repo_name,
+            issue_number,
+            exc.code,
+            body,
+        )
+        return {"sent": False, "http_status": exc.code, "error": body}
+    except URLError as exc:
+        LOGGER.error(
+            "Discord heartbeat failed repo=%s issue=%s error=%s",
+            repo_name,
+            issue_number,
+            exc,
+        )
+        return {"sent": False, "error": str(exc)}
 
 
 def _verify_signature(raw_body: bytes, received_signature: str, secret: str) -> bool:

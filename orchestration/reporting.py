@@ -2,11 +2,7 @@ from __future__ import annotations
 
 from orchestration.github_client import GitHubClient
 
-RESULT_TO_LABEL = {
-    "done": "dispatch:done",
-    "blocked": "dispatch:blocked",
-    "failed": "dispatch:failed",
-}
+RETURN_REVIEW_LABEL = "status:done"
 
 
 def format_result_comment(result: dict) -> str:
@@ -42,10 +38,8 @@ def report_result(repository_full_name: str, issue_number: int, result: dict) ->
     body = format_result_comment(result)
     client.comment_issue(issue_number, body)
     client.remove_labels(issue_number, ["dispatch:ready", "dispatch:running"])
-    final_label = RESULT_TO_LABEL.get(result.get("result_status"))
-    if final_label:
-        client.add_labels(issue_number, [final_label])
+    client.add_labels(issue_number, [RETURN_REVIEW_LABEL])
     return {
         "comment_posted": True,
-        "final_label": final_label,
+        "final_label": RETURN_REVIEW_LABEL,
     }

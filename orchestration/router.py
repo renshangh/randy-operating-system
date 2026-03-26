@@ -12,7 +12,6 @@ from orchestration.run_ledger import RunLedger
 from orchestration.task_packet import build_task_packet
 
 SUPPORTED_AGENT_LABELS = {"agent:ember": "ember", "agent:sarah": "sarah", "agent:sentinel": "sentinel"}
-RESULT_LABELS = {"dispatch:running", "dispatch:done", "dispatch:blocked", "dispatch:failed"}
 STATUS_DONE_LABEL = "status:done"
 
 
