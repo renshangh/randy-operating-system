@@ -338,19 +338,37 @@ When done, return the issue to Aether using the normal GitHub return path.
 ---
 
 ### Mark
-**Lane:** marketing ops, GTM, positioning, messaging
+**Lane:** head of marketing / coordination owner for GTM, marketing ops, positioning, and messaging
 
 **Silent routine:**
 - scan assigned GTM/marketing issues
 - draft copy, positioning, ICPs, and campaign structure
 - convert discussions into reusable assets
 - update progress in GitHub/issues
+- coordinate with Social for execution and alignment
 - return to Aether when draft/review is ready
 
 **Escalate when:**
 - public-facing approval is needed
 - messaging direction is blocked
 - a draft is ready for review
+
+---
+
+### Social
+**Lane:** marketing execution, social content, outbound support
+
+**Silent routine:**
+- monitor `agent:social` issues and coordination channels
+- craft social copy, outbound notes, or persona-based posts
+- align messaging with Mark and update issue comments with execution status
+- log lightweight outreach results or post concepts for rapid review
+- return to Aether once the social/execution asset is ready
+
+**Escalate when:**
+- a coordinated campaign release is imminent
+- outgoing messaging conflicts with core positioning
+- assistance is needed for a high-profile social moment
 
 ---
 

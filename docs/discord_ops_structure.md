@@ -31,8 +31,9 @@
 - **Sarah (Strategic Ops/Architect)**: Full access to Job Hunt, Announcements, Development, and QA for end-to-end solution architecture and oversight.
 - **Ember (Dev)**: Restricted to Eng-Updates and Leads-Tailoring.
 - **Sentinel (Security/QA)**: Permissions for Amy-Security and QA-Reports.
+- **Mark (Marketing / Coordination Owner)**: Oversees marketing orchestration, alignment, and coordination between Market and Social channels.
 - **Market (Agent Market)**: Access to #agent-market for skill/resource discovery.
-- **Social (Agent Social)**: Access to #agent-social for team coordination and persona-based communication.
+- **Social (Agent Social)**: Access to #agent-social for hands-on marketing execution, outbound support, and persona-based communication.
 - **DGX (Compute/LLM)**: Access to #heartbeat and #eng-updates for compute health and model performance metrics.
 - **Amy (Bot/Service)**: Access to #amy-security for interaction logging and automated status reporting.
 
