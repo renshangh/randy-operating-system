@@ -10,6 +10,8 @@ Define the GitHub-first operating model for dispatching work to specialists, rou
 ## Roles
 - **Aether** — orchestrator, reviewer, sequencing owner
 - **Sarah** — planning, architecture, workflow design
+- **Mark** — head of marketing, GTM coordination owner, positioning/messaging lead
+- **Social** — marketing execution, social content, outbound support
 - **Ember** — implementation, coding, technical execution
 - **Sentinel** — QA, validation, bug checking
 
@@ -19,6 +21,8 @@ Every routed issue should use explicit GitHub routing labels.
 ### Agent label
 Use one of:
 - `agent:sarah`
+- `agent:mark`
+- `agent:social`
 - `agent:ember`
 - `agent:sentinel`
 

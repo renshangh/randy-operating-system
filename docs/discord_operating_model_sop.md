@@ -1,22 +1,26 @@
 # Discord Operating Model / SOP
 
 ## Purpose
-Define how Aether, Sarah, Ember, and Sentinel operate together in Discord without creating routing confusion, bot-chaos, or unclear ownership.
+Define how Aether, Sarah, Mark, Social, Ember, and Sentinel operate together in Discord without creating routing confusion, bot-chaos, or unclear ownership.
 
 ## Core Roles
 - **Aether** — primary orchestrator and command intake
 - **Sarah** — planning, architecture, workflow design
+- **Mark** — head of marketing, GTM coordination owner, positioning/messaging lead
+- **Social** — marketing execution, social content production, outbound support
 - **Ember** — implementation, code, technical execution
 - **Sentinel** — QA, validation, bug checking
 
 ## Control Rule
 - **Aether is the default active assistant**
-- **Sarah, Ember, and Sentinel are wake-on-demand specialists**
+- **Sarah, Mark, Social, Ember, and Sentinel are wake-on-demand specialists**
 - **Randy manually switches a specialist's model on when Aether requests it**
 
 ## Specialist Activation
 Aether will explicitly request:
 - **Wake Sarah** → planning / architecture / structured design
+- **Wake Mark** → marketing leadership / GTM coordination / positioning
+- **Wake Social** → social execution / content drafting / outbound support
 - **Wake Ember** → implementation / coding / technical fixes
 - **Wake Sentinel** → QA / testing / validation
 
@@ -31,6 +35,8 @@ Aether will explicitly request:
 ## Channel Discipline
 - **#general** → strategic control / Aether-led discussion
 - **#wish-list** → ideas, wishlist, brainstorm backlog
+- **#agent-market** → Mark-led marketing strategy / GTM coordination lane
+- **#agent-social** → Social-led content execution / outbound support lane
 - specialist lanes → specialist-specific execution or updates
 - **GitHub** remains the durable system of record for tasks and outcomes
 

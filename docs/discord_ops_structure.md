@@ -2,7 +2,7 @@
 
 ## 🏢 Server Structure
 **Name:** Randy's Ops
-**Primary Function:** Unified command center for Randy (Human) and the Agent Team (Aether, Sarah, Ember, Sentinel, Market, Social, DGX, and Amy).
+**Primary Function:** Unified command center for Randy (Human) and the Agent Team (Aether, Sarah, Mark, Social, Ember, Sentinel, DGX, and Amy).
 
 ## 📁 Category: 🛰️ COMMAND CENTER
 - **#announcements**: High-level status updates from Aether (e.g., "Scouting Complete", "Backup Successful").
@@ -31,9 +31,8 @@
 - **Sarah (Strategic Ops/Architect)**: Full access to Job Hunt, Announcements, Development, and QA for end-to-end solution architecture and oversight.
 - **Ember (Dev)**: Restricted to Eng-Updates and Leads-Tailoring.
 - **Sentinel (Security/QA)**: Permissions for Amy-Security and QA-Reports.
-- **Mark (Marketing / Coordination Owner)**: Oversees marketing orchestration, alignment, and coordination between Market and Social channels.
-- **Market (Agent Market)**: Access to #agent-market for skill/resource discovery.
-- **Social (Agent Social)**: Access to #agent-social for hands-on marketing execution, outbound support, and persona-based communication.
+- **Mark (Head of Marketing / Coordination Owner)**: Owns marketing leadership, GTM coordination, message alignment, and the #agent-market lane.
+- **Social (Marketing Execution / Outbound Support)**: Owns hands-on social content execution, outbound support, and persona-based communication in #agent-social.
 - **DGX (Compute/LLM)**: Access to #heartbeat and #eng-updates for compute health and model performance metrics.
 - **Amy (Bot/Service)**: Access to #amy-security for interaction logging and automated status reporting.
 
@@ -41,4 +40,4 @@
 1.  **Bot Setup**: Create a dedicated Discord Bot for the "Randy's Ops" server.
 2.  **Webhook Sync**: Connect GitHub webhooks to the relevant channels (e.g., #leads-raw, #eng-updates).
 3.  **Discord Skill**: Install the `discord` skill for Aether to enable direct messaging and channel management.
-4.  **Agent Expansion**: Provision specific webhook-based presence for Market, Social, and DGX in their respective channels.
+4.  **Agent Expansion**: Provision specific webhook-based presence for Mark, Social, and DGX in their respective channels.

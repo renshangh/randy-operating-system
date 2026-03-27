@@ -514,6 +514,7 @@ Use labels primarily for:
 Core labels:
 - `agent:sarah`
 - `agent:mark`
+- `agent:social`
 - `agent:ember`
 - `agent:sentinel`
 - `dispatch:ready`
