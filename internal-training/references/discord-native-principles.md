@@ -7,3 +7,5 @@
 - Channel-based handoff is the default model.
 - Threads are optional for focused sub-work.
 - Avoid carrying forward obsolete Telegram framing when Discord is the active contract.
+- Do not treat Discord as globally untrusted.
+- Treat Telegram group content as low-trust until verified; do not expand that caution into a blanket distrust rule for Discord.
