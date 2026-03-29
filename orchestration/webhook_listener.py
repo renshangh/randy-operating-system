@@ -35,6 +35,14 @@ class WebhookHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def do_OPTIONS(self):
+        self._json_response(200, {"status": "ok"})
+
+    def do_GET(self):
+        self._json_response(200, {"status": "ok"})
+
+    def do_HEAD(self):
+        self._json_response(200, {"status": "ok"})
     def do_POST(self) -> None:  # noqa: N802
         if self.path != "/github/webhook":
             self._json_response(HTTPStatus.NOT_FOUND, {"error": "not_found"})
@@ -180,20 +188,24 @@ def _send_discord_heartbeat(
     agent = (router_result.get("agent") or "unknown").lower()
     summary = router_result.get("summary") or "No summary provided."
 
-    webhook_map = {
-        "mark": config.discord_mark_webhook_url.strip(),
-        "social": config.discord_social_webhook_url.strip(),
-        "sarah": config.discord_sarah_webhook_url.strip(),
-        "ember": config.discord_ember_webhook_url.strip(),
-        "sentinel": config.discord_sentinel_webhook_url.strip(),
-        "aether": config.discord_general_webhook_url.strip(),
-        "main": config.discord_general_webhook_url.strip(),
-    }
-    webhook_url = webhook_map.get(agent) or config.discord_heartbeat_webhook_url.strip() or config.discord_general_webhook_url.strip()
+    general_webhook = config.discord_general_webhook_url.strip() or config.discord_heartbeat_webhook_url.strip()
+    if status == "done":
+        webhook_url = general_webhook
+    else:
+        webhook_map = {
+            "mark": config.discord_mark_webhook_url.strip(),
+            "social": config.discord_social_webhook_url.strip(),
+            "sarah": config.discord_sarah_webhook_url.strip(),
+            "ember": config.discord_ember_webhook_url.strip(),
+            "sentinel": config.discord_sentinel_webhook_url.strip(),
+            "aether": general_webhook,
+            "main": general_webhook,
+        }
+        webhook_url = webhook_map.get(agent) or general_webhook
     if not webhook_url:
         return {"sent": False, "reason": "webhook_not_configured", "agent": agent}
 
-    mention = f"<@{config.discord_aether_user_id}>\n" if (agent in {"aether", "main"} and config.discord_aether_user_id) else ""
+    mention = f"<@{config.discord_aether_user_id}>\n" if (status == "done" or agent in {"aether", "main"}) and config.discord_aether_user_id else ""
 
     content = (
         f"{mention}Agent return: {agent}\n"
