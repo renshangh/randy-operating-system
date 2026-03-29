@@ -167,10 +167,6 @@ def _send_discord_heartbeat(
     router_result: dict[str, Any],
     direct_wake_result: Any | None = None,
 ) -> dict[str, Any] | None:
-    webhook_url = config.discord_heartbeat_webhook_url.strip()
-    if not webhook_url:
-        return {"sent": False, "reason": "webhook_not_configured"}
-
     if not (
         router_result.get("status", "").startswith("completion:")
         or router_result.get("status", "").startswith("command:")
@@ -181,9 +177,23 @@ def _send_discord_heartbeat(
     repo_name = normalized_event.get("repository_full_name")
     issue_url = normalized_event.get("issue_url") or ""
     status = (router_result.get("status") or "completion:unknown").split(":", 1)[-1]
-    agent = router_result.get("agent") or "unknown"
+    agent = (router_result.get("agent") or "unknown").lower()
     summary = router_result.get("summary") or "No summary provided."
-    mention = f"<@{config.discord_aether_user_id}>\n" if config.discord_aether_user_id else ""
+
+    webhook_map = {
+        "mark": config.discord_mark_webhook_url.strip(),
+        "social": config.discord_social_webhook_url.strip(),
+        "sarah": config.discord_sarah_webhook_url.strip(),
+        "ember": config.discord_ember_webhook_url.strip(),
+        "sentinel": config.discord_sentinel_webhook_url.strip(),
+        "aether": config.discord_general_webhook_url.strip(),
+        "main": config.discord_general_webhook_url.strip(),
+    }
+    webhook_url = webhook_map.get(agent) or config.discord_heartbeat_webhook_url.strip() or config.discord_general_webhook_url.strip()
+    if not webhook_url:
+        return {"sent": False, "reason": "webhook_not_configured", "agent": agent}
+
+    mention = f"<@{config.discord_aether_user_id}>\n" if (agent in {"aether", "main"} and config.discord_aether_user_id) else ""
 
     content = (
         f"{mention}Agent return: {agent}\n"
@@ -217,25 +227,27 @@ def _send_discord_heartbeat(
             agent,
             status_code,
         )
-        return {"sent": True, "http_status": status_code}
+        return {"sent": True, "http_status": status_code, "agent": agent}
     except HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
         LOGGER.error(
-            "Discord heartbeat failed repo=%s issue=%s http_status=%s body=%s",
+            "Discord heartbeat failed repo=%s issue=%s agent=%s http_status=%s body=%s",
             repo_name,
             issue_number,
+            agent,
             exc.code,
             body,
         )
-        return {"sent": False, "http_status": exc.code, "error": body}
+        return {"sent": False, "http_status": exc.code, "error": body, "agent": agent}
     except URLError as exc:
         LOGGER.error(
-            "Discord heartbeat failed repo=%s issue=%s error=%s",
+            "Discord heartbeat failed repo=%s issue=%s agent=%s error=%s",
             repo_name,
             issue_number,
+            agent,
             exc,
         )
-        return {"sent": False, "error": str(exc)}
+        return {"sent": False, "error": str(exc), "agent": agent}
 
 
 def _verify_signature(raw_body: bytes, received_signature: str, secret: str) -> bool:
