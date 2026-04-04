@@ -4,38 +4,28 @@ set -euo pipefail
 python3 - <<'PY'
 import json
 import subprocess
-import sys
 import urllib.parse
 import urllib.request
 from datetime import datetime
-from pathlib import Path
 
-CONFIG = Path.home() / '.openclaw' / 'openclaw.json'
 CHANNEL_ID = '1483095196018278423'
 ACCOUNT_ID = 'ember'
 
-cfg = json.loads(CONFIG.read_text())
-api_key = (
-    cfg.get('tools', {})
-       .get('web', {})
-       .get('search', {})
-       .get('apiKey')
-)
-if not api_key:
-    raise SystemExit('Brave API key not found in ~/.openclaw/openclaw.json')
-
 today = datetime.now().strftime('%Y-%m-%d')
 
-# --- AI news via Brave Search API ---
+# --- AI news via Google News RSS (no Brave dependency) ---
 query = urllib.parse.quote('latest AI news')
-url = f'https://api.search.brave.com/res/v1/web/search?q={query}&count=5&freshness=pd&country=US&search_lang=en'
-req = urllib.request.Request(url, headers={
-    'Accept': 'application/json',
-    'X-Subscription-Token': api_key,
-})
-with urllib.request.urlopen(req, timeout=30) as resp:
-    brave = json.load(resp)
-results = brave.get('web', {}).get('results', [])[:5]
+url = f'https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en'
+with urllib.request.urlopen(url, timeout=30) as resp:
+    rss = resp.read().decode('utf-8', errors='ignore')
+
+items = rss.split('<item>')[1:6]
+results = []
+for item in items:
+    title = item.split('<title>', 1)[1].split('</title>', 1)[0].strip() if '<title>' in item else 'Untitled'
+    link = item.split('<link>', 1)[1].split('</link>', 1)[0].strip() if '<link>' in item else ''
+    if title:
+        results.append({'title': title, 'url': link})
 
 lines = [f'🗞️ **Top-5 AI news for {today}**', '']
 for i, item in enumerate(results, start=1):
@@ -46,12 +36,14 @@ for i, item in enumerate(results, start=1):
 lines += ['', '---', '']
 
 # --- OpenClaw repos via gh CLI ---
+gh_env = dict(__import__('os').environ)
+gh_env.pop('GH_TOKEN', None)
 gh_raw = subprocess.check_output([
     'gh', 'search', 'repos', 'openclaw',
     '--limit', '3',
     '--sort', 'stars',
     '--json', 'fullName,url,description,stargazersCount'
-], text=True)
+], text=True, env=gh_env)
 repos = json.loads(gh_raw)
 
 lines.append(f'🛠️ **Top 3 OpenClaw-related repos (as of {today})**')
