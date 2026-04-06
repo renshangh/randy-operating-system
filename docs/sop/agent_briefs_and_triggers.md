@@ -493,7 +493,8 @@ A specialist should begin active work when:
 Aether should review when the specialist has:
 - removed `dispatch:ready`
 - added `status:done`
-- posted a substantive GitHub return comment
+- posted a substantive GitHub return comment beginning with `Author: AgentName`
+- sent the normal Discord wake-up pointing back to the GitHub issue
 
 ## Canonical stale trigger
 Aether should intervene when:
@@ -540,7 +541,9 @@ Make sure each dispatched issue includes:
 Make sure each specialist returns work using:
 - remove `dispatch:ready`
 - add `status:done`
-- post substantive GitHub result comment
+- begin the GitHub return with `Author: AgentName`
+- post substantive GitHub result comment with proof/blocker detail
+- send the normal Discord wake-up pointing back to the GitHub issue
 
 ## Phase 4 — Aether watchlist discipline
 Aether maintains visibility on delegated issues and intervenes when work stalls.

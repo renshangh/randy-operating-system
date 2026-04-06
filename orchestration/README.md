@@ -11,6 +11,7 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `adapters/base_runner.py` — runner result contract
 - `adapters/ember_runner.py` — Ember adapter scaffold
 - `github_client.py` — minimal GitHub issue comment/label wrapper
+- `dispatch_helper.py` — unified dispatch helper for GitHub labels/comments plus Discord follow-up payloads
 - `reporting.py` — result comment + label transition logic
 - `amy_transcript_adapter.py` — Amy Mac Mini transcript JSONL adapter for mirror events
 - `discord_output.py` — shared Discord webhook sender used by mirroring/notice flows
@@ -36,6 +37,11 @@ Phase 1 webhook-driven orchestration scaffold for `randy-operating-system`.
 - `AMY_TRANSCRIPT_PATH` — optional override for the Amy transcript JSONL path, default: `~/.openclaw/agents/amy/sessions/4da4b59b-d945-43b6-8707-06e2cc2d88c2.jsonl`
 - `SARAH_SESSIONS_INDEX_PATH` — optional override for Sarah session discovery index, default: `~/.openclaw/agents/sarah/sessions/sessions.json`
 - `MIRROR_LEDGER_PATH` — optional SQLite path for mirror dedupe + cursor state, default: `orchestration/mirror_ledger.sqlite`
+- `DISCORD_MARK_WEBHOOK_URL` — optional webhook used by `dispatch_helper.py` for Mark follow-ups in `#agent-market`
+- `DISCORD_SARAH_WEBHOOK_URL` — optional webhook used by `dispatch_helper.py` for Sarah follow-ups in `#ops-architecture`
+- `DISCORD_EMBER_WEBHOOK_URL` / `DISCORD_SENTINEL_WEBHOOK_URL` — optional webhook targets for Ember/Sentinel dispatch helper follow-ups
+- `DISCORD_EMBER_CHANNEL_ID` / `DISCORD_SENTINEL_CHANNEL_ID` — optional overrides for the default Ember/Sentinel lane ids used by the dispatch helper
+- `DISCORD_EMBER_MENTION` / `DISCORD_SENTINEL_MENTION` — optional explicit Discord mentions used by the helper until those agent ids are fully standardized in config
 
 ## Sarah Telegram mirror runner notes
 - Run as a module from the repo root: `python3 -m orchestration.mirror_sarah_telegram_to_discord ...`
@@ -50,6 +56,13 @@ export ALLOWED_REPOS='renshangh/real-estate-assistant,renshangh/openclaw-remote-
 export ORCHESTRATION_REMOTE_DEPLOY_PATH="$HOME/.openclaw/workspace/openclaw-remote-deploy"
 python -m orchestration.webhook_listener
 ```
+
+## Dispatch helper quick start
+- Preferred wrapper: `scripts/dispatch_issue.sh <repo> <issue_number> <agent> <issue_url> "<dispatch body>"`
+- Direct module form: `python3 -m orchestration.dispatch_helper --repo renshangh/marketing-ops --issue 18 --agent mark --issue-url https://github.com/renshangh/marketing-ops/issues/18 --body "Please pick this up and return progress on GitHub."`
+- The helper always applies both the target `agent:*` label and `dispatch:ready`, posts the GitHub dispatch comment, and builds/sends the Discord follow-up when the relevant channel webhook is configured.
+- For current operations, Mark, Sarah, Ember, and Sentinel dispatches should use this helper/wrapper as the default path instead of manual label/comment sequencing.
+- If no webhook is configured, the helper still performs the GitHub-side dispatch and prints the exact Discord follow-up text for manual relay.
 
 ## Notes
 - The listener intentionally stays narrow: receive, verify, normalize, and hand off.
