@@ -46,7 +46,7 @@ The plugin now supports:
 Current local target config is:
 - provider: `remote-http`
 - model: `BAAI/bge-small-en-v1.5`
-- baseUrl: `http://192.168.1.44:8011`
+- baseUrl: `http://192.168.1.4:8011`
 - timeoutMs: `30000`
 - dbPath: `~/.openclaw/memory/lancedb-bge-small-en-v15`
 

@@ -48,7 +48,7 @@ Do not treat older `~/.openclaw/workspace-ember/...` copies as the active router
 From the operator machine:
 
 ```bash
-ssh danielshan@192.168.1.44
+ssh danielshan@192.168.1.4
 ```
 
 ## 2. Start the local webhook listener

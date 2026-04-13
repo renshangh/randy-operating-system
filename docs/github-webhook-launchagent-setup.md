@@ -37,15 +37,15 @@ From the operator machine:
 rsync -av \
   scripts/start_github_webhook_listener.sh \
   deploy/launchagents/ai.openclaw.github-webhook-listener.plist \
-  danielshan@192.168.1.44:/Users/danielshan/repo/randy-operating-system/
+  danielshan@192.168.1.4:/Users/danielshan/repo/randy-operating-system/
 ```
 
 If the deploy directory does not already exist remotely, copy with explicit destinations:
 
 ```bash
-ssh danielshan@192.168.1.44 'mkdir -p ~/repo/randy-operating-system/deploy/launchagents'
-rsync -av scripts/start_github_webhook_listener.sh danielshan@192.168.1.44:/Users/danielshan/repo/randy-operating-system/scripts/
-rsync -av deploy/launchagents/ai.openclaw.github-webhook-listener.plist danielshan@192.168.1.44:/Users/danielshan/repo/randy-operating-system/deploy/launchagents/
+ssh danielshan@192.168.1.4 'mkdir -p ~/repo/randy-operating-system/deploy/launchagents'
+rsync -av scripts/start_github_webhook_listener.sh danielshan@192.168.1.4:/Users/danielshan/repo/randy-operating-system/scripts/
+rsync -av deploy/launchagents/ai.openclaw.github-webhook-listener.plist danielshan@192.168.1.4:/Users/danielshan/repo/randy-operating-system/deploy/launchagents/
 ```
 
 ## 2. Make the startup script executable

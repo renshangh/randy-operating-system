@@ -3,19 +3,19 @@
 Related issue: `renshangh/randy-operating-system#192`
 
 ## Problem
-On the MacBook, the normal OpenClaw exec/runtime path could not reach LAN hosts such as the Mac Mini (`192.168.1.44`), even though the user's interactive shell on the same machine could.
+On the MacBook, the normal OpenClaw exec/runtime path could not reach LAN hosts such as the Mac Mini (`192.168.1.4`), even though the user's interactive shell on the same machine could.
 
 ## Confirmed observations
 ### From the user's interactive shell on the MacBook
 These worked:
-- `ssh danielshan@192.168.1.44 'hostname; pwd'`
-- `nc -vz 192.168.1.44 22`
-- normal LAN route table showed `192.168.1.44` reachable on `en0`
+- `ssh danielshan@192.168.1.4 'hostname; pwd'`
+- `nc -vz 192.168.1.4 22`
+- normal LAN route table showed `192.168.1.4` reachable on `en0`
 
 ### From OpenClaw exec/runtime
 These failed:
-- `ssh danielshan@192.168.1.44` → `No route to host`
-- direct socket tests to `192.168.1.44:22` and `192.168.1.248:8000` failed
+- `ssh danielshan@192.168.1.4` → `No route to host`
+- direct socket tests to `192.168.1.4:22` and `192.168.1.248:8000` failed
 
 ### Key experiment
 When the LaunchAgent-backed gateway was stopped and the gateway was started in the foreground from the user's shell context, OpenClaw exec regained Mac Mini access immediately.
