@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+
+# Local runtime state
+*.sqlite
+*.db
+*.bak-*
+orchestration/logs/**/*.json
